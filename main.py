@@ -73,9 +73,47 @@ class Model(QtWidgets.QMainWindow):
 
         if not os.path.exists(img_directory):  #Create the image directory if it doesn't already exist
             os.makedirs(img_directory)
+    
+    def generateSearchToken(self, title):
 
-    def redditSearch(self):
+        self.title = title
+
+        if ' ' in self.title:
+            self.title_list = self.title.split()
+            self.reddit_search_token = '%20'.join(self.title_list)
+            self.wikipedia_search_token = '_'.join(self.title_list)
+            self.youtube_search_token = '+'.join(self.title_list)
+        
+        else:
+
+            self.reddit_search_token = self.title
+            self.wikipedia_search_token = self.title
+            self.youtube_search_token = self.title
+
+        return self.reddit_search_token, self.wikipedia_search_token, self.youtube_search_token
+
+    def setRedditToken(self, reddit_token):
+        self.reddit_token = reddit_token
+    
+    def setWikiToken(self, wiki_token):
+        self.wiki_token = wiki_token
+    
+    def setYoutubeToken(self, youtube_token):
+        self.youtube_token = youtube_token
+    
+    def getRedditToken(self):
+        return self.reddit_token
+
+    def getWikiToken(self):
         print('placeholder')
+
+    def getYoutubeToken(self):
+        print('placeholder')
+
+    def redditSearch(self, search_token):
+        self.search_token = search_token
+        print(self.search_token)
+
     def wikiSearch(self):
         print('placeholder')
     def youTubeSearch(self):
@@ -172,36 +210,42 @@ class TopWindow(QtWidgets.QMainWindow):
         self.top_button18 = self.findChild(QtWidgets.QPushButton, 'top_button18')
         self.top_button19 = self.findChild(QtWidgets.QPushButton, 'top_button19')
 
-        self.top_button0.clicked.connect(lambda : self.changeImage(0, self.label))
-        self.top_button1.clicked.connect(lambda : self.changeImage(1, self.label))     
-        self.top_button2.clicked.connect(lambda : self.changeImage(2, self.label))  
-        self.top_button3.clicked.connect(lambda : self.changeImage(3, self.label))  
-        self.top_button4.clicked.connect(lambda : self.changeImage(4, self.label))  
-        self.top_button5.clicked.connect(lambda : self.changeImage(5, self.label))  
-        self.top_button6.clicked.connect(lambda : self.changeImage(6, self.label))  
-        self.top_button7.clicked.connect(lambda : self.changeImage(7, self.label))  
-        self.top_button8.clicked.connect(lambda : self.changeImage(8, self.label))  
-        self.top_button9.clicked.connect(lambda : self.changeImage(9, self.label))  
-        self.top_button10.clicked.connect(lambda : self.changeImage(10, self.label))  
-        self.top_button11.clicked.connect(lambda : self.changeImage(11, self.label))  
-        self.top_button12.clicked.connect(lambda : self.changeImage(12, self.label))  
-        self.top_button13.clicked.connect(lambda : self.changeImage(13, self.label))  
-        self.top_button14.clicked.connect(lambda : self.changeImage(14, self.label))  
-        self.top_button15.clicked.connect(lambda : self.changeImage(15, self.label))  
-        self.top_button16.clicked.connect(lambda : self.changeImage(16, self.label))  
-        self.top_button17.clicked.connect(lambda : self.changeImage(17, self.label))  
-        self.top_button18.clicked.connect(lambda : self.changeImage(18, self.label))  
-        self.top_button19.clicked.connect(lambda : self.changeImage(19, self.label))  
+        self.top_button0.clicked.connect(lambda : self.changeImage(0, self.label, self.model))
+        self.top_button1.clicked.connect(lambda : self.changeImage(1, self.label, self.model))     
+        self.top_button2.clicked.connect(lambda : self.changeImage(2, self.label, self.model))  
+        self.top_button3.clicked.connect(lambda : self.changeImage(3, self.label, self.model))  
+        self.top_button4.clicked.connect(lambda : self.changeImage(4, self.label, self.model))  
+        self.top_button5.clicked.connect(lambda : self.changeImage(5, self.label, self.model))  
+        self.top_button6.clicked.connect(lambda : self.changeImage(6, self.label, self.model))  
+        self.top_button7.clicked.connect(lambda : self.changeImage(7, self.label, self.model))  
+        self.top_button8.clicked.connect(lambda : self.changeImage(8, self.label, self.model))  
+        self.top_button9.clicked.connect(lambda : self.changeImage(9, self.label, self.model))  
+        self.top_button10.clicked.connect(lambda : self.changeImage(10, self.label, self.model))  
+        self.top_button11.clicked.connect(lambda : self.changeImage(11, self.label, self.model))  
+        self.top_button12.clicked.connect(lambda : self.changeImage(12, self.label, self.model))  
+        self.top_button13.clicked.connect(lambda : self.changeImage(13, self.label, self.model))  
+        self.top_button14.clicked.connect(lambda : self.changeImage(14, self.label, self.model))  
+        self.top_button15.clicked.connect(lambda : self.changeImage(15, self.label, self.model))  
+        self.top_button16.clicked.connect(lambda : self.changeImage(16, self.label, self.model))  
+        self.top_button17.clicked.connect(lambda : self.changeImage(17, self.label, self.model))  
+        self.top_button18.clicked.connect(lambda : self.changeImage(18, self.label, self.model))  
+        self.top_button19.clicked.connect(lambda : self.changeImage(19, self.label, self.model))  
 
+        self.reddit_button = self.findChild(QtWidgets.QPushButton, 'reddit_button')
+        self.wiki_button = self.findChild(QtWidgets.QPushButton, 'wiki_button')
+        self.youtube_button = self.findChild(QtWidgets.QPushButton, 'youtube_button')
+
+        self.reddit_button.clicked.connect(lambda : self.model.redditSearch(self.model.getRedditToken()))
 
 
   
-    def changeImage(self, count, label):
+    def changeImage(self, count, label, model):
         super(TopWindow, self).__init__()
         
         
         self.count = count
         self.label = label
+        self.model = model
         self.image_directory = dname + '/img'
 
         # self.label = self.findChild(QtWidgets.QLabel, 'top_img')
@@ -210,6 +254,16 @@ class TopWindow(QtWidgets.QMainWindow):
         self.label.setPixmap(self.pixmap)
         self.pixmap2 = self.pixmap.scaled(500, 500)
 
+        try:
+            self.search_string = self.titles[self.count]
+        except:
+            self.search_string = self.titles[0]
+
+        self.redditToken, self.wikiToken, self.youToken =  self.model.generateSearchToken(self.search_string)
+
+        self.model.setRedditToken(self.redditToken)
+        self.model.setWikiToken(self.wikiToken)
+        self.model.setYoutubeToken(self.youToken)
 
 
 
