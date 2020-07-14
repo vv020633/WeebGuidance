@@ -120,7 +120,7 @@
    </palette>
   </property>
   <property name="windowTitle">
-   <string>weeb_Guidance</string>
+   <string>weeb-Guidance</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QPushButton" name="rand_button">

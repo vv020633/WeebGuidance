@@ -1,18 +1,13 @@
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtGui import QIcon, QPixmap
 from jikanpy import Jikan
-import sys, os, time, pprint
+import sys, os, time, pprint, webbrowser
 import urllib.request
 
 #Instance of our Jikan class which allows for communication with the Jikan MyAnimeList API
 jikan = Jikan()
 
 #Here the directory is set to the current directory from which we're running the Python script
-def pathHere():
-    abspath = os.path.abspath(__file__)
-    dname = os.path.dirname(abspath)
-    os.chdir(dname)
-
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
@@ -22,6 +17,7 @@ class Model(QtWidgets.QMainWindow):
     def _init_(self):
         print('placeholder')
 
+    #Function which filters data from the JiKan API into something that we can use
     def jikanToTopWindow(self):
         
         try:
@@ -59,8 +55,10 @@ class Model(QtWidgets.QMainWindow):
                             self.start_dates[self.date] = '-'
         #returns titles, ranks, and start_dates , and the url for the image          
         return self.titles, self.ranks, self.start_dates, self.url
-
+    
+    #Download the Images to use for the GUI
     def downloadImage(self, img_count):
+        
         self.img_count = img_count
 
         for self.count in range(len(self.img_count)):
@@ -74,6 +72,7 @@ class Model(QtWidgets.QMainWindow):
         if not os.path.exists(img_directory):  #Create the image directory if it doesn't already exist
             os.makedirs(img_directory)
     
+    #Generates the search token that's used to search on each site
     def generateSearchToken(self, title):
 
         self.title = title
@@ -91,7 +90,7 @@ class Model(QtWidgets.QMainWindow):
             self.youtube_search_token = self.title
 
         return self.reddit_search_token, self.wikipedia_search_token, self.youtube_search_token
-
+    ###########Functions to set the search tokens###########
     def setRedditToken(self, reddit_token):
         self.reddit_token = reddit_token
     
@@ -101,25 +100,48 @@ class Model(QtWidgets.QMainWindow):
     def setYoutubeToken(self, youtube_token):
         self.youtube_token = youtube_token
     
+    ###########Functions to retrieve the search tokens###########
     def getRedditToken(self):
         return self.reddit_token
 
     def getWikiToken(self):
-        print('placeholder')
+        return self.wiki_token
 
     def getYoutubeToken(self):
-        print('placeholder')
+        return self.youtube_token
 
-    def redditSearch(self, search_token):
-        self.search_token = search_token
-        print(self.search_token)
+    ###########Functions to search the Internet for data on the target title###########
+    def redditSearch(self, reddit_token):
+        self.reddit_token = reddit_token
 
-    def wikiSearch(self):
-        print('placeholder')
-    def youTubeSearch(self):
-        print('placeholder')   
+        self.reddit_link = f'https://www.reddit.com/r/anime/search/?q={self.reddit_token}&restrict_sr=1'
+        try:
+            webbrowser.open_new_tab(self.reddit_link)
 
-########### This is the Main UI through which all functions that will act upon our main Window ##################
+        except ConnectionError:
+            print(f'Could not connect to destination: {self.search_link}' )
+
+    def wikiSearch(self, wiki_token):
+        self.wiki_token = wiki_token
+        
+        self.wiki_link = f'https://en.wikipedia.org/wiki/{self.wiki_token}'
+        try:
+            webbrowser.open_new_tab(self.wiki_link)
+        except ConnectionError:
+            print(f'Could not connect to destination: {self.wiki_link}' )
+
+    def youTubeSearch(self, youtube_token):
+
+        self.youtube_token
+
+        self.youtube_link = f'https://www.youtube.com/results?search_query={self.youtube_token}'
+        try:
+            webbrowser.open_new_tab(self.youtube_link)
+
+        except ConnectionError:
+            print(f'Could not connect to destination: {self.youtube_link}' )
+
+##################This is the Main UI through which all functions that will act upon our main Window ##################
 class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self):
@@ -159,7 +181,7 @@ class TopWindow(QtWidgets.QMainWindow):
         self.image_directory = dname + '/img'
         self.titles, self.ranks, self.start_dates, self.url = self.model.jikanToTopWindow()
         
-        os.chdir(self.image_directory)
+        os.chdir(self.image_directory) #Change to the image directory
 
         self.label = self.findChild(QtWidgets.QLabel, 'top_img')
         
@@ -172,9 +194,9 @@ class TopWindow(QtWidgets.QMainWindow):
             except:
                 print(f'Title: {self.titles[self.count]} will not be appended')
         
-        self.model.downloadImage(self.url)
+        self.model.downloadImage(self.url) # Download the images for the GUI
               
-
+        #Set the default image to the first image in the image directory
         self.label = self.findChild(QtWidgets.QLabel, 'top_img')
         self.image_path = self.image_directory + '/img0'
         self.pixmap = QPixmap(self.image_path)
@@ -231,14 +253,18 @@ class TopWindow(QtWidgets.QMainWindow):
         self.top_button18.clicked.connect(lambda : self.changeImage(18, self.label, self.model))  
         self.top_button19.clicked.connect(lambda : self.changeImage(19, self.label, self.model))  
 
+        ##################Assigning Variables for the search buttons ##################
         self.reddit_button = self.findChild(QtWidgets.QPushButton, 'reddit_button')
         self.wiki_button = self.findChild(QtWidgets.QPushButton, 'wiki_button')
         self.youtube_button = self.findChild(QtWidgets.QPushButton, 'youtube_button')
 
+        ################## Assigning search functions to buttons ##################
         self.reddit_button.clicked.connect(lambda : self.model.redditSearch(self.model.getRedditToken()))
+        self.wiki_button.clicked.connect(lambda : self.model.wikiSearch(self.model.getWikiToken()))
+        self.youtube_button.clicked.connect(lambda : self.model.youTubeSearch(self.model.getYoutubeToken()))
 
 
-  
+    ################## Function to change the display image/Pixmap for the TopUpcoming window ##################
     def changeImage(self, count, label, model):
         super(TopWindow, self).__init__()
         
@@ -260,7 +286,8 @@ class TopWindow(QtWidgets.QMainWindow):
             self.search_string = self.titles[0]
 
         self.redditToken, self.wikiToken, self.youToken =  self.model.generateSearchToken(self.search_string)
-
+        
+        #Set tokens
         self.model.setRedditToken(self.redditToken)
         self.model.setWikiToken(self.wikiToken)
         self.model.setYoutubeToken(self.youToken)
