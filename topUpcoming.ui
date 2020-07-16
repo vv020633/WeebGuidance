@@ -778,6 +778,15 @@
          </disabled>
         </palette>
        </property>
+       <property name="mouseTracking">
+        <bool>true</bool>
+       </property>
+       <property name="tabletTracking">
+        <bool>false</bool>
+       </property>
+       <property name="autoFillBackground">
+        <bool>false</bool>
+       </property>
        <property name="frameShape">
         <enum>QFrame::NoFrame</enum>
        </property>
@@ -785,7 +794,7 @@
         <enum>QFrame::Plain</enum>
        </property>
        <property name="lineWidth">
-        <number>27</number>
+        <number>28</number>
        </property>
        <property name="text">
         <string>TextLabel</string>

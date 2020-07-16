@@ -1,7 +1,7 @@
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtGui import QIcon, QPixmap
 from jikanpy import Jikan
-import sys, os, time, pprint, webbrowser
+import sys, os, time, pprint, webbrowser, concurrent.futures, datetime
 import urllib.request
 
 #Instance of our Jikan class which allows for communication with the Jikan MyAnimeList API
@@ -16,6 +16,65 @@ os.chdir(dname)
 class Model(QtWidgets.QMainWindow):
     def _init_(self):
         print('placeholder')
+
+    #Function which filters data from the Jikan API into something that we can use
+    def jikanToYearMenu(self, year_combo, movie_radiobutton, text_browser):
+        self.year_combo = year_combo
+        self.year = str(self.year_combo.currentText())
+        self.movie_radiobutton = movie_radiobutton
+        self.text_browser = text_browser
+        
+
+        try:
+            self.year_spring_anime = jikan.season(year=int(self.year), season='spring')
+            self.year_summer_anime = jikan.season(year=int(self.year), season='summer')
+            self.year_fall_anime = jikan.season(year=int(self.year), season='fall')
+            self.year_winter_anime = jikan.season(year=int(self.year), season='winter')
+            self.one_year_anime = self.year_spring_anime['anime'] + self.year_summer_anime['anime'] + self.year_fall_anime['anime'] + self.year_winter_anime['anime']
+
+
+            
+            self.movies, self.series = self.movieSeriesSplit(self.one_year_anime, self.movie_radiobutton)
+            pprint.pprint(self.movies)
+            pprint.pprint(self.series)
+            print(self.movie_radiobutton.isChecked())
+            if self.movie_radiobutton.isChecked() == True:
+                self.text_browser.clear()
+                for self.movie in self.movies:
+                    self.text_browser.append('[' + self.movie + ']' + '\n')
+            
+            elif self.movie_radiobutton.isChecked() == False:
+                self.text_browser.clear()
+                for self.show in self.series:
+                    self.text_browser.append('[' + self.show + ']' + '\n')
+
+
+        except ConnectionError:
+            print('Could not connect to the MAL API at: https://api.jikan.moe/v3')
+
+    #Used to split an incoming list of titles into movies and series        
+    def movieSeriesSplit(self, anime_list, radiobutton):
+
+        self.anime_list = anime_list 
+
+       
+        self.movies = []
+        self.series = []
+        
+        for self.anime_dict in self.anime_list:
+            for self.key, self.value in self.anime_dict.items():
+                if self.key == 'type':
+                    if self.value == 'Movie':
+                        self.movies.append(self.anime_dict['title'])
+                    else:
+                     self.series.append(self.anime_dict['title'])
+        
+                                    
+        # pprint.pprint(self.movies)
+        # pprint.pprint(self.series)   
+
+        return self.movies, self.series       
+        
 
     #Function which filters data from the JiKan API into something that we can use
     def jikanToTopWindow(self):
@@ -61,8 +120,7 @@ class Model(QtWidgets.QMainWindow):
         
         self.img_count = img_count
 
-        for self.count in range(len(self.img_count)):
-            self.local_file = urllib.request.urlretrieve(self.url[self.count], f'img{self.count}')
+        self.local_file = urllib.request.urlretrieve(self.url[self.img_count], f'img{self.img_count}')
               
 
     def createImgFolder(self):
@@ -90,6 +148,7 @@ class Model(QtWidgets.QMainWindow):
             self.youtube_search_token = self.title
 
         return self.reddit_search_token, self.wikipedia_search_token, self.youtube_search_token
+
     ###########Functions to set the search tokens###########
     def setRedditToken(self, reddit_token):
         self.reddit_token = reddit_token
@@ -140,16 +199,22 @@ class Model(QtWidgets.QMainWindow):
 
         except ConnectionError:
             print(f'Could not connect to destination: {self.youtube_link}' )
+        
 
 ##################This is the Main UI through which all functions that will act upon our main Window ##################
 class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self):
+
+        
         super(MainWindow, self).__init__() # Call the inherited classes __init__ method
         uic.loadUi('mainWindow.ui', self) #Load the mainwindow .ui file
 
         self.top_button = self.findChild(QtWidgets.QPushButton, 'topUpcoming_button')
+        self.discover_button = self.findChild(QtWidgets.QPushButton, 'discover_button')
+
         self.top_button.clicked.connect(self.topUpcomingMenu)
+        self.discover_button.clicked.connect(self.discoverMenu)
 
         self.show() #Show the GUI
 
@@ -160,12 +225,53 @@ class MainWindow(QtWidgets.QMainWindow):
         self.top = TopWindow()
         
 
-    #Discovery Menu GUi 
+    #Discovery Menu GUI
     def discoverMenu(self):
-        print('Placeholder')
+        self.discover_window = DiscoverWindow()
     
     def randomMenu(self):
         print('Placeholder')
+
+########### This is the Top UI through which all functions pertaining to the Discover Window will be created ##################
+class DiscoverWindow(QtWidgets.QMainWindow):
+
+    def __init__(self):
+        abspath = os.path.abspath(__file__)
+        dname = os.path.dirname(abspath)
+        os.chdir(dname)
+    
+        super(DiscoverWindow, self).__init__()
+        uic.loadUi('discover.ui', self)
+
+
+        self.show()
+
+        self.model = Model()
+
+        #Assigning the widgets within the window
+        self.filter_year_button = self.findChild(QtWidgets.QPushButton, 'filter_year_button')
+        self.year_combo = self.findChild(QtWidgets.QComboBox, 'year')
+        self.text_browser = self.findChild(QtWidgets.QTextBrowser, 'year_textBrowser')
+        
+
+        self.series_radiobutton = self.findChild(QtWidgets.QRadioButton, 'series_radioButton')
+        self.movies_radiobutton = self.findChild(QtWidgets.QRadioButton, 'movies_radioButton')
+        
+        self.series_radiobutton.setChecked(True)#Set the series radio button to be the one that's checked on startup
+
+        self.filter_year_button.clicked.connect(lambda: self.model.jikanToYearMenu(self.year_combo, self.movies_radiobutton, self.text_browser))
+
+        #Get the current date/year
+        self.now = datetime.datetime.now()
+        self.current_year = self.now.year
+
+       
+        #Fill the combobox with values ranging from 1926 up until the current year. 1926 should be where the first record dates back to
+        for self.year in range(1926, self.current_year + 1):
+            self.year_combo.addItem(str(self.year))
+        
+        
+    
 
 ########### This is the Top UI through which all functions pertaining to the Top Window will be created ##################
 class TopWindow(QtWidgets.QMainWindow):
@@ -193,8 +299,12 @@ class TopWindow(QtWidgets.QMainWindow):
 
             except:
                 print(f'Title: {self.titles[self.count]} will not be appended')
-        
-        self.model.downloadImage(self.url) # Download the images for the GUI
+                
+        with concurrent.futures.ThreadPoolExecutor() as executor: #Multi-threading to execute multiple downloads simultaneously
+
+            
+            self.results_cap = [0, 1 ,2 ,3, 4, 5 , 6, 7, 8, 9, 10, 11, 12 ,13 ,14 ,15 ,16 ,17, 18, 19, 20] # The limit of results that will be returned
+            self.f1 = executor.map(self.model.downloadImage, self.results_cap) # Download the images for the GUI
               
         #Set the default image to the first image in the image directory
         self.label = self.findChild(QtWidgets.QLabel, 'top_img')
@@ -266,6 +376,7 @@ class TopWindow(QtWidgets.QMainWindow):
 
     ################## Function to change the display image/Pixmap for the TopUpcoming window ##################
     def changeImage(self, count, label, model):
+
         super(TopWindow, self).__init__()
         
         
