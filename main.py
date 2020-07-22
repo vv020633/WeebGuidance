@@ -1,7 +1,8 @@
 from PyQt5 import QtWidgets, uic
+from PyQt5.QtWidgets import QMdiArea, QAction, QMdiSubWindow
 from PyQt5.QtGui import QIcon, QPixmap
 from jikanpy import Jikan
-import sys, os, time, pprint, webbrowser, concurrent.futures, datetime
+import sys, os, time, pprint, webbrowser, concurrent.futures, datetime, random
 import urllib.request
 
 #Instance of our Jikan class which allows for communication with the Jikan MyAnimeList API
@@ -19,6 +20,7 @@ class Model(QtWidgets.QMainWindow):
 
     #Function which filters data from the Jikan API into something that we can use
     def jikanToYearMenu(self, year_combo, movie_radiobutton, text_browser):
+        #Assign the widgets within the window
         self.year_combo = year_combo
         self.year = str(self.year_combo.currentText())
         self.movie_radiobutton = movie_radiobutton
@@ -26,52 +28,168 @@ class Model(QtWidgets.QMainWindow):
         
 
         try:
-            self.year_spring_anime = jikan.season(year=int(self.year), season='spring')
-            self.year_summer_anime = jikan.season(year=int(self.year), season='summer')
-            self.year_fall_anime = jikan.season(year=int(self.year), season='fall')
-            self.year_winter_anime = jikan.season(year=int(self.year), season='winter')
+            try:
+                self.year_spring_anime = jikan.season(year=int(self.year), season='spring')
+            except self.jikanpy.exceptions:
+                print('None returned')
+            try:
+                self.year_summer_anime = jikan.season(year=int(self.year), season='summer')
+            except:
+                print('None returned')
+            try:
+                self.year_fall_anime = jikan.season(year=int(self.year), season='fall')
+            except:
+                print('None returned')
+            try:
+                self.year_winter_anime = jikan.season(year=int(self.year), season='winter')
+            except:
+                print('None returned')
+
             self.one_year_anime = self.year_spring_anime['anime'] + self.year_summer_anime['anime'] + self.year_fall_anime['anime'] + self.year_winter_anime['anime']
-
-
             
-            self.movies, self.series = self.movieSeriesSplit(self.one_year_anime, self.movie_radiobutton)
-            pprint.pprint(self.movies)
-            pprint.pprint(self.series)
-            print(self.movie_radiobutton.isChecked())
+          
+            #Split the movies and titles
+            self.movies, self.series = self.movieSeriesSplit(self.one_year_anime)
+            #Create lists of keys
+            self.movies_keys = self.movies.keys()
+            self.series_keys = self.series.keys()
+            #Create alphabetically sorted lists of keys
+            self.series_sorted = sorted(self.series_keys)
+            self.movies_sorted = sorted(self.movies_keys)
+            
+
+            #series without duplicates
+            self.series_distinct = []
+
+            #Remove duplicate entries from being displayed
+            for self.anime in self.series_sorted:
+                if self.anime not in self.series_distinct:
+                    self.series_distinct.append(self.anime)
+            
+            
             if self.movie_radiobutton.isChecked() == True:
                 self.text_browser.clear()
-                for self.movie in self.movies:
-                    self.text_browser.append('[' + self.movie + ']' + '\n')
+                pprint.pprint(self.movies_sorted)
+                if len(self.movies_sorted) == 0:
+                    self.text_browser.append('Could not locate any titles matching this criteria. Sorry mate, better luck elsewhere.')
+                else:
+                    for self.movie in self.movies_sorted:
+                        self.text_browser.append( '['+ '<a href="' + self.movies[self.movie] + f'">{self.movie}</a>' + ']' + '\n')
+                    
             
             elif self.movie_radiobutton.isChecked() == False:
                 self.text_browser.clear()
-                for self.show in self.series:
-                    self.text_browser.append('[' + self.show + ']' + '\n')
+                pprint.pprint(self.series_sorted)
+                if len(self.series_sorted) == 0:
+                    self.text_browser.append('Could not locate any titles matching this criteria. Sorry mate, better luck elsewhere.')
+                else:  
+                    for self.show in self.series_sorted:
+                        self.text_browser.append( '['+ '<a href="' + self.series[self.show] + f'">{self.show}</a>' + ']' + '\n')
+                    # self.text_browser.setHtml(self.series[self.show])
 
 
         except ConnectionError:
             print('Could not connect to the MAL API at: https://api.jikan.moe/v3')
 
+        except:
+            self.text_browser.clear()
+            self.text_browser.append('Could not locate any titles matching this criteria. Sorry mate, better luck elsewhere.')
+            
+
+    def yearRandomize(self, current_year, radiobutton, text_browser, combobox):
+
+        self.current_year = current_year
+        self.movie_radiobutton = radiobutton
+        self.text_browser = text_browser
+        self.combobox = combobox
+
+        randomize = True
+        while randomize:
+            
+            self.year = random.randint(1926, self.current_year + 1)
+            try:                                    
+                self.year_spring_anime = jikan.season(year=int(self.year), season='spring')
+            except:
+                print('No spring titles found')
+            try:                                    
+                self.year_summer_anime = jikan.season(year=int(self.year), season='summer')
+            except:
+                print('No summer titles found')
+            try:            
+                self.year_fall_anime = jikan.season(year=int(self.year), season='fall')
+            except:
+                print('No fall titles found')
+            try:
+                self.year_winter_anime = jikan.season(year=int(self.year), season='winter')
+            except:
+                print('No winter titles found')
+
+            self.one_year_anime = self.year_spring_anime['anime'] + self.year_summer_anime['anime'] + self.year_fall_anime['anime'] + self.year_winter_anime['anime']
+
+            #Split the movies and titles
+            self.movies, self.series = self.movieSeriesSplit(self.one_year_anime)
+
+            if self.movie_radiobutton.isChecked() == False and not self.movies:
+                continue
+
+            elif self.movie_radiobutton.isChecked() == True and not self.series:
+                continue
+
+            else:
+                self.combobox.setPlaceholderText(str(self.year))
+                randomize = False
+                #Split the movies and titles
+                self.movies, self.series = self.movieSeriesSplit(self.one_year_anime)
+                #Create lists of keys
+                self.movies_keys = self.movies.keys()
+                self.series_keys = self.series.keys()
+                #Create alphabetically sorted lists of keys
+                self.series_sorted = sorted(self.series_keys)
+                self.movies_sorted = sorted(self.movies_keys)
+
+                if self.movie_radiobutton.isChecked() == True:
+                    self.text_browser.clear()
+                    self.text_browser.append('******** ' + str(self.year) +  ' Movies' + ' ******' + '\n')
+                
+                    for self.movie in self.movies_sorted:
+                        self.text_browser.append( '['+ '<a href="' + self.movies[self.movie] + f'">{self.movie}</a>' + ']' + '\n')
+                    
+            
+                elif self.movie_radiobutton.isChecked() == False:
+                    self.text_browser.clear()
+                    self.text_browser.append('******** ' + str(self.year) +  ' Series' + ' ******' + '\n')
+
+                    for self.show in self.series_sorted:
+                        self.text_browser.append( '['+ '<a href="' + self.series[self.show] + f'">{self.show}</a>' + ']' + '\n')
+                        # self.text_browser.setHtml(self.series[self.show])
+            
+                
+
+        
+            
+        
     #Used to split an incoming list of titles into movies and series        
-    def movieSeriesSplit(self, anime_list, radiobutton):
+    def movieSeriesSplit(self, anime_list):
 
         self.anime_list = anime_list 
 
-       
-        self.movies = []
-        self.series = []
+        self.movies = {}
+        self.series = {}
         
+        #Split the movie titles and their urls
         for self.anime_dict in self.anime_list:
             for self.key, self.value in self.anime_dict.items():
                 if self.key == 'type':
                     if self.value == 'Movie':
-                        self.movies.append(self.anime_dict['title'])
+                        self.title = self.anime_dict['title']
+                        self.url = self.anime_dict['url']
+                        self.movies[self.title] = self.url
+                    #Split the show titles and their urls
                     else:
-                     self.series.append(self.anime_dict['title'])
-        
-                                    
-        # pprint.pprint(self.movies)
-        # pprint.pprint(self.series)   
+                        self.title = self.anime_dict['title']
+                        self.url = self.anime_dict['url']
+                        self.series[self.title] = self.url
+          
 
         return self.movies, self.series       
         
@@ -208,6 +326,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         
         super(MainWindow, self).__init__() # Call the inherited classes __init__ method
+
         uic.loadUi('mainWindow.ui', self) #Load the mainwindow .ui file
 
         self.top_button = self.findChild(QtWidgets.QPushButton, 'topUpcoming_button')
@@ -222,11 +341,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
     #Top Upcoming anime GUI
     def topUpcomingMenu(self):
+        self.hide() #Hide the main window
         self.top = TopWindow()
         
 
     #Discovery Menu GUI
     def discoverMenu(self):
+        self.hide() #Hide the main window
         self.discover_window = DiscoverWindow()
     
     def randomMenu(self):
@@ -252,23 +373,32 @@ class DiscoverWindow(QtWidgets.QMainWindow):
         self.filter_year_button = self.findChild(QtWidgets.QPushButton, 'filter_year_button')
         self.year_combo = self.findChild(QtWidgets.QComboBox, 'year')
         self.text_browser = self.findChild(QtWidgets.QTextBrowser, 'year_textBrowser')
-        
-
         self.series_radiobutton = self.findChild(QtWidgets.QRadioButton, 'series_radioButton')
         self.movies_radiobutton = self.findChild(QtWidgets.QRadioButton, 'movies_radioButton')
-        
-        self.series_radiobutton.setChecked(True)#Set the series radio button to be the one that's checked on startup
+        self.back_button = self.findChild(QtWidgets.QCommandLinkButton, 'backButton')
+        self.rand_button = self.findChild(QtWidgets.QPushButton, 'randButton')
+
+        #Set the series radio button to be the one that's checked on startup
+        self.series_radiobutton.setChecked(True)
 
         self.filter_year_button.clicked.connect(lambda: self.model.jikanToYearMenu(self.year_combo, self.movies_radiobutton, self.text_browser))
+        self.back_button.clicked.connect(self.home)
+        
 
         #Get the current date/year
         self.now = datetime.datetime.now()
         self.current_year = self.now.year
 
+        self.rand_button.clicked.connect(lambda: self.model.yearRandomize(self.current_year, self.movies_radiobutton, self.text_browser, self.year_combo))
+
        
         #Fill the combobox with values ranging from 1926 up until the current year. 1926 should be where the first record dates back to
         for self.year in range(1926, self.current_year + 1):
             self.year_combo.addItem(str(self.year))
+    
+    def home(self):
+        self.hide()
+        self.mainWindow = MainWindow()
         
         
     
@@ -277,49 +407,48 @@ class DiscoverWindow(QtWidgets.QMainWindow):
 class TopWindow(QtWidgets.QMainWindow):
     
     def __init__(self):
+        os.chdir(dname)
         super(TopWindow, self).__init__()
-        uic.loadUi('topUpcoming.ui', self) #Load the topUpcoming.ui file
 
-        self.show()
+        uic.loadUi('topUpcoming.ui', self) #Load the topUpcoming.ui file
         
+        self.show()
         self.model = Model()
         self.model.createImgFolder()
         self.image_directory = dname + '/img'
         self.titles, self.ranks, self.start_dates, self.url = self.model.jikanToTopWindow()
-        
+    
         os.chdir(self.image_directory) #Change to the image directory
-
         self.label = self.findChild(QtWidgets.QLabel, 'top_img')
-        
+    
         for self.count in range(len(self.titles)):
             try:
                 self.top_button = self.findChild(QtWidgets.QPushButton, 'top_button' + str(self.count))
                 self.top_button.setText('[' + str(self.count + 1) + ']' + ': ' + self.titles[self.count])
-                
-
+            
             except:
                 print(f'Title: {self.titles[self.count]} will not be appended')
-                
-        with concurrent.futures.ThreadPoolExecutor() as executor: #Multi-threading to execute multiple downloads simultaneously
-
             
+        with concurrent.futures.ThreadPoolExecutor() as executor: #Multi-threading to execute multiple downloads simultaneously
+        
             self.results_cap = [0, 1 ,2 ,3, 4, 5 , 6, 7, 8, 9, 10, 11, 12 ,13 ,14 ,15 ,16 ,17, 18, 19, 20] # The limit of results that will be returned
             self.f1 = executor.map(self.model.downloadImage, self.results_cap) # Download the images for the GUI
-              
+          
         #Set the default image to the first image in the image directory
         self.label = self.findChild(QtWidgets.QLabel, 'top_img')
         self.image_path = self.image_directory + '/img0'
         self.pixmap = QPixmap(self.image_path)
         self.label.setPixmap(self.pixmap)
         self.pixmap2 = self.pixmap.scaled(500, 500)
-
-        
+    
         # for self.count in range(0,20):
         #     try:
         #         self.top_button = self.findChild(QtWidgets.QPushButton, 'top_button' + str(self.count))   
         #         self.top_button.clicked.connect(lambda : self.changeImage(self.count, self.label))   
         #     except:
         #             print('fail')
+        
+        self.back_button = self.findChild(QtWidgets.QCommandLinkButton, 'backButton')
 
         self.top_button0 = self.findChild(QtWidgets.QPushButton, 'top_button0')
         self.top_button1 = self.findChild(QtWidgets.QPushButton, 'top_button1')
@@ -341,7 +470,6 @@ class TopWindow(QtWidgets.QMainWindow):
         self.top_button17 = self.findChild(QtWidgets.QPushButton, 'top_button17')
         self.top_button18 = self.findChild(QtWidgets.QPushButton, 'top_button18')
         self.top_button19 = self.findChild(QtWidgets.QPushButton, 'top_button19')
-
         self.top_button0.clicked.connect(lambda : self.changeImage(0, self.label, self.model))
         self.top_button1.clicked.connect(lambda : self.changeImage(1, self.label, self.model))     
         self.top_button2.clicked.connect(lambda : self.changeImage(2, self.label, self.model))  
@@ -362,17 +490,23 @@ class TopWindow(QtWidgets.QMainWindow):
         self.top_button17.clicked.connect(lambda : self.changeImage(17, self.label, self.model))  
         self.top_button18.clicked.connect(lambda : self.changeImage(18, self.label, self.model))  
         self.top_button19.clicked.connect(lambda : self.changeImage(19, self.label, self.model))  
-
         ##################Assigning Variables for the search buttons ##################
         self.reddit_button = self.findChild(QtWidgets.QPushButton, 'reddit_button')
         self.wiki_button = self.findChild(QtWidgets.QPushButton, 'wiki_button')
         self.youtube_button = self.findChild(QtWidgets.QPushButton, 'youtube_button')
-
         ################## Assigning search functions to buttons ##################
         self.reddit_button.clicked.connect(lambda : self.model.redditSearch(self.model.getRedditToken()))
         self.wiki_button.clicked.connect(lambda : self.model.wikiSearch(self.model.getWikiToken()))
         self.youtube_button.clicked.connect(lambda : self.model.youTubeSearch(self.model.getYoutubeToken()))
+        #Back to the home window
+        self.back_button.clicked.connect(lambda : self.home())
 
+    def home(self):
+        self.hide()
+        os.chdir(dname)
+        self.mainWindow = MainWindow()
+        
+         
 
     ################## Function to change the display image/Pixmap for the TopUpcoming window ##################
     def changeImage(self, count, label, model):
