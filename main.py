@@ -2,7 +2,7 @@ from PyQt5 import QtWidgets, uic
 from PyQt5.QtWidgets import QMdiArea, QAction, QMdiSubWindow
 from PyQt5.QtGui import QIcon, QPixmap
 from jikanpy import Jikan
-import sys, os, time, pprint, webbrowser, concurrent.futures, datetime, random
+import sys, os, time, datetime, pprint, webbrowser, concurrent.futures, random
 import urllib.request
 
 #Instance of our Jikan class which allows for communication with the Jikan MyAnimeList API
@@ -12,9 +12,12 @@ jikan = Jikan()
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
-    
+
+rand_state = True
 ########### This is the Model class through which all functions that respond to changes in the  ##################
 class Model(QtWidgets.QMainWindow):
+    
+
     def _init_(self):
         print('placeholder')
 
@@ -30,7 +33,7 @@ class Model(QtWidgets.QMainWindow):
         try:
             try:
                 self.year_spring_anime = jikan.season(year=int(self.year), season='spring')
-            except self.jikanpy.exceptions:
+            except:
                 print('None returned')
             try:
                 self.year_summer_anime = jikan.season(year=int(self.year), season='summer')
@@ -73,6 +76,7 @@ class Model(QtWidgets.QMainWindow):
                 if len(self.movies_sorted) == 0:
                     self.text_browser.append('Could not locate any titles matching this criteria. Sorry mate, better luck elsewhere.')
                 else:
+                    self.text_browser.append('******** ' + str(self.year) +  'Movies' + ' ********' + '\n')
                     for self.movie in self.movies_sorted:
                         self.text_browser.append( '['+ '<a href="' + self.movies[self.movie] + f'">{self.movie}</a>' + ']' + '\n')
                     
@@ -83,9 +87,9 @@ class Model(QtWidgets.QMainWindow):
                 if len(self.series_sorted) == 0:
                     self.text_browser.append('Could not locate any titles matching this criteria. Sorry mate, better luck elsewhere.')
                 else:  
+                    self.text_browser.append('***** ' + str(self.year) + ' Airing' +  ' Series' + ' *****' + '\n')
                     for self.show in self.series_sorted:
                         self.text_browser.append( '['+ '<a href="' + self.series[self.show] + f'">{self.show}</a>' + ']' + '\n')
-                    # self.text_browser.setHtml(self.series[self.show])
 
 
         except ConnectionError:
@@ -97,74 +101,99 @@ class Model(QtWidgets.QMainWindow):
             
 
     def yearRandomize(self, current_year, radiobutton, text_browser, combobox):
-
+        
+        #The active variable which will be used to determine how many times the Random button has been clicked
+        
         self.current_year = current_year
         self.movie_radiobutton = radiobutton
         self.text_browser = text_browser
         self.combobox = combobox
+        
+        self.rand_state = False
 
-        randomize = True
-        while randomize:
-            
-            self.year = random.randint(1926, self.current_year + 1)
-            try:                                    
-                self.year_spring_anime = jikan.season(year=int(self.year), season='spring')
-            except:
-                print('No spring titles found')
-            try:                                    
-                self.year_summer_anime = jikan.season(year=int(self.year), season='summer')
-            except:
-                print('No summer titles found')
-            try:            
-                self.year_fall_anime = jikan.season(year=int(self.year), season='fall')
-            except:
-                print('No fall titles found')
-            try:
-                self.year_winter_anime = jikan.season(year=int(self.year), season='winter')
-            except:
-                print('No winter titles found')
+        if self.rand_state == False:
 
-            self.one_year_anime = self.year_spring_anime['anime'] + self.year_summer_anime['anime'] + self.year_fall_anime['anime'] + self.year_winter_anime['anime']
+            #Loops through until a year is returned with valid series
+            self.randomize = True
+            while self.randomize:
 
-            #Split the movies and titles
-            self.movies, self.series = self.movieSeriesSplit(self.one_year_anime)
+                self.year = random.randint(1926, self.current_year + 1)
+                try:                                   
+                    self.year_spring_anime = jikan.season(year= self.year, season='spring')
+                except:
+                    print('No titles found for the spring')
+                try:                                  
+                    self.year_summer_anime = jikan.season(year= self.year, season='summer')
+                except:
+                    print('No titles found for the summer') 
+                try:        
+                    self.year_fall_anime = jikan.season(year= self.year, season='fall')
+                except:
+                    print('No titles found for the fall') 
+                try:
+                    self.year_winter_anime = jikan.season(year= self.year, season='winter')
+                except:
+                    print('No titles found for the winter')
+                
+                self.one_year_anime = self.year_spring_anime['anime'] + self.year_summer_anime['anime'] + self.year_fall_anime['anime'] + self.year_winter_anime['anime']
 
-            if self.movie_radiobutton.isChecked() == False and not self.movies:
-                continue
-
-            elif self.movie_radiobutton.isChecked() == True and not self.series:
-                continue
-
-            else:
-                self.combobox.setPlaceholderText(str(self.year))
-                randomize = False
                 #Split the movies and titles
                 self.movies, self.series = self.movieSeriesSplit(self.one_year_anime)
-                #Create lists of keys
-                self.movies_keys = self.movies.keys()
-                self.series_keys = self.series.keys()
-                #Create alphabetically sorted lists of keys
-                self.series_sorted = sorted(self.series_keys)
-                self.movies_sorted = sorted(self.movies_keys)
 
-                if self.movie_radiobutton.isChecked() == True:
-                    self.text_browser.clear()
-                    self.text_browser.append('******** ' + str(self.year) +  ' Movies' + ' ******' + '\n')
+                if self.movie_radiobutton.isChecked() == False and len(self.series) == 0:
+                    continue
+
+                elif self.movie_radiobutton.isChecked() == True and len(self.movies) == 0:
+                    continue
+
+                else:
+                    self.randomize = False
+                    #Split the movies and titles
+                    self.movies, self.series = self.movieSeriesSplit(self.one_year_anime)
+                    #Create lists of keys
+                    self.movies_keys = self.movies.keys()
+                    self.series_keys = self.series.keys()
+                    #Create alphabetically sorted lists of keys
+                    self.series_sorted = sorted(self.series_keys)
+                    self.movies_sorted = sorted(self.movies_keys)
+
+                    if self.movie_radiobutton.isChecked() == True:
+                        self.text_browser.clear()
+                        self.text_browser.append('******** ' + str(self.year) +  ' Movies' + ' ********' + '\n')
+                        
+                        self.rand_state = False
+
+                        for self.movie in self.movies_sorted:
+                            self.text_browser.append( '['+ '<a href="' + self.movies[self.movie] + f'">{self.movie}</a>' + ']' + '\n')
+                            
+
+
+                    elif self.movie_radiobutton.isChecked() == False:
+                        self.text_browser.clear()
+                        self.text_browser.append('***** ' + str(self.year) + ' Airing' +  ' Series' + ' *****' + '\n')
+
+                        self.rand_state = False
+
+                        for self.show in self.series_sorted:
+                            self.text_browser.append( '['+ '<a href="' + self.series[self.show] + f'">{self.show}</a>' + ']' + '\n')
+
+        # elif self.rand_state == True and self.movie_radiobutton.isChecked() == True:                
+        #     self.rand_url = self.movies_sorted[random.randint(len(self.movies_sorted))]
+        #     try:
+        #         webbrowser.open_new_tab(self.rand_url)
+        #     except:
+        #         print('Connection could not be established')
                 
-                    for self.movie in self.movies_sorted:
-                        self.text_browser.append( '['+ '<a href="' + self.movies[self.movie] + f'">{self.movie}</a>' + ']' + '\n')
-                    
-            
-                elif self.movie_radiobutton.isChecked() == False:
-                    self.text_browser.clear()
-                    self.text_browser.append('******** ' + str(self.year) +  ' Series' + ' ******' + '\n')
+    def randYearSetState(self):
 
-                    for self.show in self.series_sorted:
-                        self.text_browser.append( '['+ '<a href="' + self.series[self.show] + f'">{self.show}</a>' + ']' + '\n')
-                        # self.text_browser.setHtml(self.series[self.show])
-            
-                
-
+        self.rand_state = rand_state
+        if self.rand_state == True:
+            self.rand_state = False
+        
+        elif self.rand_state == False:
+            self.rand_state == True
+        
+        return self.rand_state
         
             
         
@@ -369,20 +398,36 @@ class DiscoverWindow(QtWidgets.QMainWindow):
 
         self.model = Model()
 
+        #Values to fill the genrecombobox with
+        self.genres = ['Action', 'Adventure', 'Cars', 'Comedy', 'Dementia', 'Demons', 'Mystery', 'Drama', 'Ecchi',
+        'Fantasy', 'Game', 'Hentai', 'Historical', 'Horror', 'Kids', 'Magic', 'Martial Arts',
+        'Mecha', 'Music', 'Parody', 'Samurai', 'Romance', 'School', 'Sci Fi', 'Shoujo',
+        'Shoujo Ai', 'Shounen', 'Shounen Ai', 'Space', 'Sports', 'Super Power', 'Vampire', 'Yaoi',
+        'Yuri', 'Harem', 'Slice Of Life', 'Supernatural', 'Military', 'Police', 'Psychological', 'Thriller',
+        'Seinen', 'Josei']
+
         #Assigning the widgets within the window
         self.filter_year_button = self.findChild(QtWidgets.QPushButton, 'filter_year_button')
         self.year_combo = self.findChild(QtWidgets.QComboBox, 'year')
+        self.genre_combo = self.findChild(QtWidgets.QComboBox, 'genre_combo')
         self.text_browser = self.findChild(QtWidgets.QTextBrowser, 'year_textBrowser')
         self.series_radiobutton = self.findChild(QtWidgets.QRadioButton, 'series_radioButton')
+        self.series_radiobutton_2 = self.findChild(QtWidgets.QRadioButton, 'series_radioButton_2')
         self.movies_radiobutton = self.findChild(QtWidgets.QRadioButton, 'movies_radioButton')
         self.back_button = self.findChild(QtWidgets.QCommandLinkButton, 'backButton')
+        self.back_button_2 = self.findChild(QtWidgets.QCommandLinkButton, 'backButton_2')
         self.rand_button = self.findChild(QtWidgets.QPushButton, 'randButton')
 
         #Set the series radio button to be the one that's checked on startup
         self.series_radiobutton.setChecked(True)
+        self.series_radiobutton_2.setChecked(True)
+        
 
         self.filter_year_button.clicked.connect(lambda: self.model.jikanToYearMenu(self.year_combo, self.movies_radiobutton, self.text_browser))
+
+        #Assign click events to the main menu buttons
         self.back_button.clicked.connect(self.home)
+        self.back_button_2.clicked.connect(self.home)
         
 
         #Get the current date/year
@@ -395,14 +440,17 @@ class DiscoverWindow(QtWidgets.QMainWindow):
         #Fill the combobox with values ranging from 1926 up until the current year. 1926 should be where the first record dates back to
         for self.year in range(1926, self.current_year + 1):
             self.year_combo.addItem(str(self.year))
+
+        #Fill the combobox with the genre values that MAL uses to categorize their anime
+        for self.genre in self.genres:
+            self.genre_combo.addItem(str(self.genre))
     
     def home(self):
+
         self.hide()
         self.mainWindow = MainWindow()
         
         
-    
-
 ########### This is the Top UI through which all functions pertaining to the Top Window will be created ##################
 class TopWindow(QtWidgets.QMainWindow):
     
@@ -505,8 +553,6 @@ class TopWindow(QtWidgets.QMainWindow):
         self.hide()
         os.chdir(dname)
         self.mainWindow = MainWindow()
-        
-         
 
     ################## Function to change the display image/Pixmap for the TopUpcoming window ##################
     def changeImage(self, count, label, model):
