@@ -1,5 +1,5 @@
 from PyQt5 import QtWidgets, uic
-from PyQt5.QtWidgets import QMdiArea, QAction, QMdiSubWindow
+from PyQt5.QtWidgets import QAction, QCompleter
 from PyQt5.QtGui import QIcon, QPixmap
 from jikanpy import Jikan
 import sys, os, time, datetime, pprint, webbrowser, concurrent.futures, random
@@ -21,8 +21,28 @@ class Model(QtWidgets.QMainWindow):
     def _init_(self):
         print('placeholder')
 
+    def apiToMainMenu(self, search_field):
+        self.search_field = search_field
+       
+        #If the length of the text field is divisible by 3 then the values are retreived from the API. This is done to limit the number of inputs sent to the API by the user, which could results in an error
+        if len(self.search_field.text()) % 3 == 0:
+
+            self.titles=[]
+            self.jikan_search = jikan.search('anime', search_field.text(), page=1)
+           
+            self.results = self.jikan_search['results']
+            for self.result in self.results:   
+                self.titles.append(self.result['title'])
+
+            self.completer = QCompleter(self.titles, self)
+            self.search_field.setCompleter(self.completer)    
+
+            pprint.pprint(self.titles)
+            
+
+
     #Function which filters data from the Jikan API into something that we can use
-    def jikanToYearMenu(self, year_combo, movie_radiobutton, text_browser):
+    def apiToYearMenu(self, year_combo, movie_radiobutton, text_browser):
         #Assign the widgets within the window
         self.year_combo = year_combo
         self.year = str(self.year_combo.currentText())
@@ -224,7 +244,7 @@ class Model(QtWidgets.QMainWindow):
         
 
     #Function which filters data from the JiKan API into something that we can use
-    def jikanToTopWindow(self):
+    def apiToTopWindow(self):
         
         try:
             #Grabbing the top upcoming anime from the MAL API
@@ -353,17 +373,20 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self):
 
-        
+        self.model = Model()
         super(MainWindow, self).__init__() # Call the inherited classes __init__ method
 
         uic.loadUi('mainWindow.ui', self) #Load the mainwindow .ui file
+
+        self.search_field = self.findChild(QtWidgets.QLineEdit, 'search_field')
 
         self.top_button = self.findChild(QtWidgets.QPushButton, 'topUpcoming_button')
         self.discover_button = self.findChild(QtWidgets.QPushButton, 'discover_button')
 
         self.top_button.clicked.connect(self.topUpcomingMenu)
         self.discover_button.clicked.connect(self.discoverMenu)
-
+        
+        self.search_field.textChanged.connect(lambda: self.model.apiToMainMenu(self.search_field))
         self.show() #Show the GUI
 
 
@@ -423,7 +446,7 @@ class DiscoverWindow(QtWidgets.QMainWindow):
         self.series_radiobutton_2.setChecked(True)
         
 
-        self.filter_year_button.clicked.connect(lambda: self.model.jikanToYearMenu(self.year_combo, self.movies_radiobutton, self.text_browser))
+        self.filter_year_button.clicked.connect(lambda: self.model.YearMenu(self.year_combo, self.movies_radiobutton, self.text_browser))
 
         #Assign click events to the main menu buttons
         self.back_button.clicked.connect(self.home)
@@ -464,7 +487,7 @@ class TopWindow(QtWidgets.QMainWindow):
         self.model = Model()
         self.model.createImgFolder()
         self.image_directory = dname + '/img'
-        self.titles, self.ranks, self.start_dates, self.url = self.model.jikanToTopWindow()
+        self.titles, self.ranks, self.start_dates, self.url = self.model.apiToTopWindow()
     
         os.chdir(self.image_directory) #Change to the image directory
         self.label = self.findChild(QtWidgets.QLabel, 'top_img')
