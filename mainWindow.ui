@@ -336,8 +336,17 @@
     <property name="accessibleDescription">
      <string>This field is used to select a random episode of a series</string>
     </property>
+    <property name="maxLength">
+     <number>30</number>
+    </property>
     <property name="placeholderText">
      <string>Search...</string>
+    </property>
+    <property name="cursorMoveStyle">
+     <enum>Qt::LogicalMoveStyle</enum>
+    </property>
+    <property name="clearButtonEnabled">
+     <bool>false</bool>
     </property>
    </widget>
   </widget>
@@ -347,7 +356,7 @@
      <x>0</x>
      <y>0</y>
      <width>460</width>
-     <height>20</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuHelp">
