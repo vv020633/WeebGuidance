@@ -131,51 +131,51 @@ class Model(QtWidgets.QMainWindow):
         self.combobox = combobox
         
         
-        self.rand_state = False
-
-        if self.rand_state == False:
-
-            #Loops through until a year is returned with valid series
-            self.randomize = True
-            self.text_browser.clear()
+     
+        #Loops through until a year is returned with valid series
+        self.randomize = True
+        self.text_browser.clear()
             
-            while self.randomize:
+        while self.randomize:
 
-                self.year = random.randint(1926, self.current_year + 1)
-                self.one_year_anime = self.combineSeasons(self.year)
+            self.year = random.randint(1926, self.current_year + 1)
+            self.one_year_anime = self.combineSeasons(self.year)
                 
+            #Split the movies and titles
+            self.movies, self.series = self.movieSeriesSplit(self.one_year_anime)
+
+                # if self.movie_radiobutton.isChecked() == False and len(self.series) == 0:
+                #     continue
+
+                # elif self.movie_radiobutton.isChecked() == True and len(self.movies) == 0:
+                #     continue
+            try:
+                    
                 #Split the movies and titles
                 self.movies, self.series = self.movieSeriesSplit(self.one_year_anime)
+                #Create lists of keys
+                self.movies_keys = self.movies.keys()
+                self.series_keys = self.series.keys()
+                #Create alphabetically sorted lists of keys
+                self.series_sorted = sorted(self.series_keys)
+                self.movies_sorted = sorted(self.movies_keys)
 
-                if self.movie_radiobutton.isChecked() == False and len(self.series) == 0:
-                    continue
-
-                elif self.movie_radiobutton.isChecked() == True and len(self.movies) == 0:
-                    continue
-
-                else:
-                    self.randomize = False
-                    #Split the movies and titles
-                    self.movies, self.series = self.movieSeriesSplit(self.one_year_anime)
-                    #Create lists of keys
-                    self.movies_keys = self.movies.keys()
-                    self.series_keys = self.series.keys()
-                    #Create alphabetically sorted lists of keys
-                    self.series_sorted = sorted(self.series_keys)
-                    self.movies_sorted = sorted(self.movies_keys)
-
-                    if self.movie_radiobutton.isChecked() == True:
+                if self.movie_radiobutton.isChecked() == True:
+                    if len(self.movies) >= 1:
+                        self.randomize = False
                         self.text_browser.clear()
                         self.text_browser.append('******** ' + str(self.year) +  ' Movies' + ' ********' + '\n')
-                        
-                        self.rand_state = False
-
+                
                         for self.movie in self.movies_sorted:
                             self.text_browser.append( '['+ '<a href="' + self.movies[self.movie] + f'">{self.movie}</a>' + ']' + '\n')
+                    else:
+                        continue
                             
 
 
-                    elif self.movie_radiobutton.isChecked() == False:
+                elif self.movie_radiobutton.isChecked() == False:
+                    if len(self.series) >=1:
+                        self.randomize = False
                         self.text_browser.clear()
                         self.text_browser.append('***** ' + str(self.year) + ' Airing' +  ' Series' + ' *****' + '\n')
 
@@ -183,6 +183,10 @@ class Model(QtWidgets.QMainWindow):
 
                         for self.show in self.series_sorted:
                             self.text_browser.append( '['+ '<a href="' + self.series[self.show] + f'">{self.show}</a>' + ']' + '\n')
+                    else:
+                        continue
+            except TypeError:
+                continue
 
     
     def filterYear(self, year, text_browser,movie_radiobutton ):
@@ -261,20 +265,26 @@ class Model(QtWidgets.QMainWindow):
 
         self.movies = {}
         self.series = {}
-        
-        #Split the movie titles and their urls
-        for self.anime_dict in self.anime_list:
-            for self.key, self.value in self.anime_dict.items():
-                if self.key == 'type':
-                    if self.value == 'Movie':
-                        self.title = self.anime_dict['title']
-                        self.url = self.anime_dict['url']
-                        self.movies[self.title] = self.url
-                    #Split the show titles and their urls
-                    else:
-                        self.title = self.anime_dict['title']
-                        self.url = self.anime_dict['url']
-                        self.series[self.title] = self.url
+        try:
+            #Split the movie titles and their urls
+            for self.anime_dict in self.anime_list:
+                for self.key, self.value in self.anime_dict.items():
+                    if self.key == 'type':
+                        if self.value == 'Movie':
+                            self.title = self.anime_dict['title']
+                            self.url = self.anime_dict['url']
+                            self.movies[self.title] = self.url
+                        #Split the show titles and their urls
+                        else:
+                            self.title = self.anime_dict['title']
+                            self.url = self.anime_dict['url']
+                            self.series[self.title] = self.url
+        except TypeError as error:
+            print('This value is empty. Skipping value' + error)
+        if self.movies is None:
+            self.movies = []
+        if self.series is None:
+            self.movies = []
           
 
         return self.movies, self.series       
