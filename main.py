@@ -144,7 +144,8 @@ class Model(QtWidgets.QMainWindow):
                         self.randomize = False
                         self.text_browser.clear()
                         self.text_browser.append('******** ' + str(self.year) +  ' Movies' + ' ********' + '\n')
-                
+
+                        self.m
                         for self.movie in self.movies_sorted:
                             self.text_browser.append( '['+ '<a href="' + self.movies[self.movie] + f'">{self.movie}</a>' + ']' + '\n')
                     else:
@@ -181,10 +182,12 @@ class Model(QtWidgets.QMainWindow):
         self.movies_keys = self.movies.keys()
         self.series_keys = self.series.keys()
 
+        pprint.pprint(self.series)
         #Create alphabetically sorted lists of keys
         self.series_sorted = sorted(self.series_keys)
         self.movies_sorted = sorted(self.movies_keys)
 
+        #If the user has chosen movie
         if self.movie_radiobutton.isChecked() == True:
             self.text_browser.clear()
 
@@ -194,8 +197,15 @@ class Model(QtWidgets.QMainWindow):
             else:
                 self.text_browser.append('******** ' + self.year +  ' Movies' + ' ********' + '\n')
 
-                for self.movie in self.movies_sorted:
-                    self.text_browser.append( '['+ '<a href="' + self.movies[self.movie] + f'">{self.movie}</a>' + ']' + '\n')
+                
+                for self.film in self.movies_sorted:
+                    #Retrieve the url and score values from the movie dictionary to append to the list
+                    self.show_metadata = self.movies[self.film]
+                    self.url = self.show_metadata[0]
+                    self.score = self.show_metadata[1]
+                    self.text_browser.append( '['+ '<a href="' + self.url + f'">{self.film}</a>' + ']' + '\n')
+                    self.text_browser.append('Score: ' + str(self.score))
+                    self.text_browser.append('- - - - - - - - - - - - - - - - - - - - - - - - - - - - -')
         else:
             self.text_browser.clear()
             if not self.series_sorted :
@@ -203,7 +213,13 @@ class Model(QtWidgets.QMainWindow):
             else:
                 self.text_browser.append('***** ' + self.year + ' Airing Series' + ' *****' + '\n')  
                 for self.show in self.series_sorted:
-                    self.text_browser.append( '['+ '<a href="' + self.series[self.show] + f'">{self.show}</a>' + ']' + '\n') 
+                    self.show_metadata = self.series[self.show]
+                    self.url = self.show_metadata[0]
+                    self.score = self.show_metadata[1]
+                    
+                    self.text_browser.append( '['+ '<a href="' + self.url+ f'">{self.show}</a>' + ']' + '\n')
+                    self.text_browser.append('Score: ' + str(self.score) ) 
+                    self.text_browser.append('- - - - - - - - - - - - - - - - - - - - - - - - - - - - -')
             
     #Combines the four seasons of anime queries into one year
     def combineSeasons(self, year):
@@ -219,6 +235,7 @@ class Model(QtWidgets.QMainWindow):
                 self.seasonal_anime = self.seasonal_list['anime']
                 for self.anime in self.seasonal_anime:
                     self.one_year_anime.append(self.anime)
+
                 return self.one_year_anime
             except:
                 print('No titles found for the' + self.season)
@@ -259,12 +276,20 @@ class Model(QtWidgets.QMainWindow):
                         if self.value == 'Movie':
                             self.title = self.anime_dict['title']
                             self.url = self.anime_dict['url']
-                            self.movies[self.title] = self.url
+                            self.rating = self.anime_dict['score']
+                            self.movie_metadata = [self.url, self.rating]
+                            self.movies[self.title] = self.movie_metadata
+                            
+                            
+
                         #Split the show titles and their urls
                         else:
                             self.title = self.anime_dict['title']
                             self.url = self.anime_dict['url']
-                            self.series[self.title] = self.url
+                            self.rating = self.anime_dict['score']
+                            self.series_metadata = [self.url, self.rating]
+                            self.series[self.title] = self.series_metadata
+
         except TypeError as error:
             print('This value is empty. Skipping value' + error)
 
@@ -511,7 +536,6 @@ class DiscoverWindow(QtWidgets.QMainWindow):
         self.hide()
         self.mainWindow = MainWindow()
         
-        
 ########### This is the Top UI through which all functions pertaining to the Top Window will be created ##################
 class TopWindow(QtWidgets.QMainWindow):
     
@@ -611,9 +635,9 @@ class TopWindow(QtWidgets.QMainWindow):
         self.back_button.clicked.connect(lambda : self.home())
 
     def home(self):
-        self.hide()
         os.chdir(dname)
-        self.mainWindow = MainWindow()
+        self.hide()
+        self.main = MainWindow()
 
     ################## Function to change the display image/Pixmap for the TopUpcoming window ##################
     def changeImage(self, count, label, model):
