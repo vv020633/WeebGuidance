@@ -5,7 +5,7 @@ from jikanpy import Jikan
 import sys, os, time, datetime, pprint, webbrowser, concurrent.futures, random, threading
 import urllib.request
 
-#Instance of our Jikan class which allows for communication with the Jikan MyAnimeList API
+#Instance of our Jikan class which allows for communication with the Jikan MyAnimeList API. This is the foundation of this application
 jikan = Jikan()
 
 #Here the directory is set to the current directory from which we're running the Python script
@@ -14,7 +14,7 @@ dname = os.path.dirname(abspath)
 os.chdir(dname)
 
 rand_state = True
-########### This is the Model class through which all functions that respond to changes in the  ##################
+########### This is the Model class through which all functions that respond to changes in the  UI exist ##################
 class Model(QtWidgets.QMainWindow):
     
 
@@ -28,13 +28,16 @@ class Model(QtWidgets.QMainWindow):
         if len(self.search_field.text()) == 3 or (len(self.search_field.text()) - 3) % 2 == 0:
 
             self.titles=[]
+            #Search parameter is set to retrieve anime only
             self.jikan_search = jikan.search('anime', search_field.text(), page=1)
            
+           #Filter the resultes to retrieve TV titles only 
             self.results = self.jikan_search['results']
             for self.result in self.results: 
                 if self.result['type'] == 'TV':
                     self.titles.append(self.result['title'])
 
+            #Predictive text feature which display a best guest of search results based on the user's input
             self.completer = QCompleter(self.titles, self)
             self.search_field.setCompleter(self.completer)    
 
@@ -52,25 +55,8 @@ class Model(QtWidgets.QMainWindow):
         
 
         try:
-            try:
-                self.year_spring_anime = jikan.season(year=int(self.year), season='spring')
-            except:
-                print('None returned')
-            try:
-                self.year_summer_anime = jikan.season(year=int(self.year), season='summer')
-            except:
-                print('None returned')
-            try:
-                self.year_fall_anime = jikan.season(year=int(self.year), season='fall')
-            except:
-                print('None returned')
-            try:
-                self.year_winter_anime = jikan.season(year=int(self.year), season='winter')
-            except:
-                print('None returned')
-
-            self.one_year_anime = self.year_spring_anime['anime'] + self.year_summer_anime['anime'] + self.year_fall_anime['anime'] + self.year_winter_anime['anime']
-            
+   
+            self.one_year_anime = self.combineSeasons(self.year)
           
             #Split the movies and titles
             self.movies, self.series = self.movieSeriesSplit(self.one_year_anime)
@@ -90,10 +76,9 @@ class Model(QtWidgets.QMainWindow):
                 if self.anime not in self.series_distinct:
                     self.series_distinct.append(self.anime)
             
-            
+            #If the user has selected the radio button indicating to filter the output to films
             if self.movie_radiobutton.isChecked() == True:
                 self.text_browser.clear()
-                pprint.pprint(self.movies_sorted)
                 if len(self.movies_sorted) == 0:
                     self.text_browser.append('Could not locate any titles matching this criteria. Sorry mate, better luck elsewhere.')
                 else:
@@ -101,7 +86,7 @@ class Model(QtWidgets.QMainWindow):
                     for self.movie in self.movies_sorted:
                         self.text_browser.append( '['+ '<a href="' + self.movies[self.movie] + f'">{self.movie}</a>' + ']' + '\n')
                     
-            
+            #If the user has selected the radio button indicating to filter the output to series
             elif self.movie_radiobutton.isChecked() == False:
                 self.text_browser.clear()
                 pprint.pprint(self.series_sorted)
@@ -120,7 +105,7 @@ class Model(QtWidgets.QMainWindow):
             self.text_browser.clear()
             self.text_browser.append('Could not locate any titles matching this criteria. Sorry mate, better luck elsewhere.')
             
-
+    # Function to select a random year to find films and titles for
     def yearRandomize(self, current_year, radiobutton, text_browser, combobox):
         
         #The active variable which will be used to determine how many times the Random button has been clicked
@@ -130,9 +115,7 @@ class Model(QtWidgets.QMainWindow):
         self.text_browser = text_browser
         self.combobox = combobox
         
-        
-     
-        #Loops through until a year is returned with valid series
+        #Loops through until a year is returned in which series were released
         self.randomize = True
         self.text_browser.clear()
             
@@ -144,11 +127,6 @@ class Model(QtWidgets.QMainWindow):
             #Split the movies and titles
             self.movies, self.series = self.movieSeriesSplit(self.one_year_anime)
 
-                # if self.movie_radiobutton.isChecked() == False and len(self.series) == 0:
-                #     continue
-
-                # elif self.movie_radiobutton.isChecked() == True and len(self.movies) == 0:
-                #     continue
             try:
                     
                 #Split the movies and titles
@@ -160,6 +138,7 @@ class Model(QtWidgets.QMainWindow):
                 self.series_sorted = sorted(self.series_keys)
                 self.movies_sorted = sorted(self.movies_keys)
 
+                #If the user has selected the movie option then we output the movies to the Text Browser
                 if self.movie_radiobutton.isChecked() == True:
                     if len(self.movies) >= 1:
                         self.randomize = False
@@ -172,7 +151,7 @@ class Model(QtWidgets.QMainWindow):
                         continue
                             
 
-
+                #If the user has selected the series option then we output the series to the Text Browser
                 elif self.movie_radiobutton.isChecked() == False:
                     if len(self.series) >=1:
                         self.randomize = False
@@ -188,30 +167,37 @@ class Model(QtWidgets.QMainWindow):
             except TypeError:
                 continue
 
-    
+    #Function that is used to 
     def filterYear(self, year, text_browser,movie_radiobutton ):
         
         self.year = year
         self.text_browser = text_browser
         self.movie_radiobutton = movie_radiobutton
+
+        #Combine Seasons and split based on if they're movies or titles
         self.one_year_anime = self.combineSeasons(self.year.currentText())
         self.movies, self.series = self.movieSeriesSplit(self.one_year_anime)
+
         self.movies_keys = self.movies.keys()
         self.series_keys = self.series.keys()
+
         #Create alphabetically sorted lists of keys
         self.series_sorted = sorted(self.series_keys)
         self.movies_sorted = sorted(self.movies_keys)
+
         if self.movie_radiobutton.isChecked() == True:
             self.text_browser.clear()
+
             if not self.movies_sorted:
                 self.text_browser.append('Could not find retrieve any movies from ' + self.year)
+
             else:
                 self.text_browser.append('******** ' + self.year +  ' Movies' + ' ********' + '\n')
+
                 for self.movie in self.movies_sorted:
                     self.text_browser.append( '['+ '<a href="' + self.movies[self.movie] + f'">{self.movie}</a>' + ']' + '\n')
         else:
             self.text_browser.clear()
-            print(self.series_sorted)
             if not self.series_sorted :
                 self.text_browser.append('Could not find retrieve any series from ' + self.year)
             else:
@@ -281,6 +267,8 @@ class Model(QtWidgets.QMainWindow):
                             self.series[self.title] = self.url
         except TypeError as error:
             print('This value is empty. Skipping value' + error)
+
+        #If either the movies or titles return None as a value then we want to replace it with an empty list    
         if self.movies is None:
             self.movies = []
         if self.series is None:
@@ -336,7 +324,7 @@ class Model(QtWidgets.QMainWindow):
 
         self.local_file = urllib.request.urlretrieve(self.url[self.img_count], f'img{self.img_count}')
               
-
+    #Create the Image folder to store images
     def createImgFolder(self):
 
         img_directory = dname + '/img'
@@ -349,6 +337,7 @@ class Model(QtWidgets.QMainWindow):
 
         self.title = title
 
+        #If there is a space in the title then we'll need to join the titles together using their respective website delimeters 
         if ' ' in self.title:
             self.title_list = self.title.split()
             self.reddit_search_token = '%20'.join(self.title_list)
@@ -516,6 +505,7 @@ class DiscoverWindow(QtWidgets.QMainWindow):
         for self.genre in self.genres:
             self.genre_combo.addItem(str(self.genre))
     
+    #Function to return to the Main Window
     def home(self):
 
         self.hide()
@@ -634,10 +624,13 @@ class TopWindow(QtWidgets.QMainWindow):
         self.count = count
         self.label = label
         self.model = model
+        
+        # Naming the image directiroy
         self.image_directory = dname + '/img'
 
-        # self.label = self.findChild(QtWidgets.QLabel, 'top_img')
+        #Naming the image downloads
         self.image_path = self.image_directory + '/img' + str(self.count) 
+        #Set the image as the background
         self.pixmap = QPixmap(self.image_path)
         self.label.setPixmap(self.pixmap)
         self.pixmap2 = self.pixmap.scaled(500, 500)
