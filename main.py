@@ -89,8 +89,7 @@ class Model(QtWidgets.QMainWindow):
             #If the user has selected the radio button indicating to filter the output to series
             elif self.movie_radiobutton.isChecked() == False:
                 self.text_browser.clear()
-                pprint.pprint(self.series_sorted)
-                if len(self.series_sorted) == 0:
+                if len(self.series_sorted) :
                     self.text_browser.append('Could not locate any titles matching this criteria. Sorry mate, better luck elsewhere.')
                 else:  
                     self.text_browser.append('***** ' + str(self.year) + ' Airing' +  ' Series' + ' *****' + '\n')
@@ -137,7 +136,7 @@ class Model(QtWidgets.QMainWindow):
                 #Create alphabetically sorted lists of keys
                 self.series_sorted = sorted(self.series_keys)
                 self.movies_sorted = sorted(self.movies_keys)
-
+                
                 #If the user has selected the movie option then we output the movies to the Text Browser
                 if self.movie_radiobutton.isChecked() == True:
                     if len(self.movies) >= 1:
@@ -145,9 +144,14 @@ class Model(QtWidgets.QMainWindow):
                         self.text_browser.clear()
                         self.text_browser.append('******** ' + str(self.year) +  ' Movies' + ' ********' + '\n')
 
-                        self.m
-                        for self.movie in self.movies_sorted:
-                            self.text_browser.append( '['+ '<a href="' + self.movies[self.movie] + f'">{self.movie}</a>' + ']' + '\n')
+                        for self.film in self.movies_sorted:
+                            #Filter out the url and score from the dictionary to append to the screen
+                            self.film_metadata = self.movies[self.film]
+                            self.url = self.film_metadata[0]
+                            self.score = self.film_metadata[1]
+                            self.text_browser.append( '['+ '<a href="' + self.url + f'">{self.film}</a>' + ']' + '\n')
+                            self.text_browser.append('Score: ' + str(self.score) ) 
+                            self.text_browser.append('- - - - - - - - - - - - - - - - - - - - - - - - - - - - -')
                     else:
                         continue
                             
@@ -159,10 +163,14 @@ class Model(QtWidgets.QMainWindow):
                         self.text_browser.clear()
                         self.text_browser.append('***** ' + str(self.year) + ' Airing' +  ' Series' + ' *****' + '\n')
 
-                        self.rand_state = False
-
                         for self.show in self.series_sorted:
-                            self.text_browser.append( '['+ '<a href="' + self.series[self.show] + f'">{self.show}</a>' + ']' + '\n')
+
+                            self.series_metadata = self.series[self.show]
+                            self.url = self.series_metadata[0]
+                            self.score = self.series_metadata[1]
+                            self.text_browser.append( '['+ '<a href="' + self.url + f'">{self.show}</a>' + ']' + '\n')
+                            self.text_browser.append('Score: ' + str(self.score) ) 
+                            self.text_browser.append('- - - - - - - - - - - - - - - - - - - - - - - - - - - - -')
                     else:
                         continue
             except TypeError:
@@ -182,7 +190,6 @@ class Model(QtWidgets.QMainWindow):
         self.movies_keys = self.movies.keys()
         self.series_keys = self.series.keys()
 
-        pprint.pprint(self.series)
         #Create alphabetically sorted lists of keys
         self.series_sorted = sorted(self.series_keys)
         self.movies_sorted = sorted(self.movies_keys)
@@ -291,7 +298,8 @@ class Model(QtWidgets.QMainWindow):
                             self.series[self.title] = self.series_metadata
 
         except TypeError as error:
-            print('This value is empty. Skipping value' + error)
+            print('This value is empty. Skipping value')
+            print(error)
 
         #If either the movies or titles return None as a value then we want to replace it with an empty list    
         if self.movies is None:
