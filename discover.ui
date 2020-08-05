@@ -213,7 +213,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="tab">
      <attribute name="title">
@@ -599,160 +599,6 @@
         <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
       </property>
      </widget>
-     <widget class="QRadioButton" name="movies_radioButton_5">
-      <property name="geometry">
-       <rect>
-        <x>73</x>
-        <y>73</y>
-        <width>74</width>
-        <height>23</height>
-       </rect>
-      </property>
-      <property name="palette">
-       <palette>
-        <active>
-         <colorrole role="ButtonText">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>238</red>
-            <green>238</green>
-            <blue>236</blue>
-           </color>
-          </brush>
-         </colorrole>
-         <colorrole role="Base">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>173</red>
-            <green>127</green>
-            <blue>168</blue>
-           </color>
-          </brush>
-         </colorrole>
-         <colorrole role="ToolTipText">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>238</red>
-            <green>238</green>
-            <blue>236</blue>
-           </color>
-          </brush>
-         </colorrole>
-        </active>
-        <inactive>
-         <colorrole role="ButtonText">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>238</red>
-            <green>238</green>
-            <blue>236</blue>
-           </color>
-          </brush>
-         </colorrole>
-         <colorrole role="Base">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>173</red>
-            <green>127</green>
-            <blue>168</blue>
-           </color>
-          </brush>
-         </colorrole>
-         <colorrole role="ToolTipText">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>238</red>
-            <green>238</green>
-            <blue>236</blue>
-           </color>
-          </brush>
-         </colorrole>
-        </inactive>
-        <disabled>
-         <colorrole role="ButtonText">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>190</red>
-            <green>190</green>
-            <blue>190</blue>
-           </color>
-          </brush>
-         </colorrole>
-         <colorrole role="Base">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>49</red>
-            <green>29</green>
-            <blue>63</blue>
-           </color>
-          </brush>
-         </colorrole>
-         <colorrole role="ToolTipText">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>238</red>
-            <green>238</green>
-            <blue>236</blue>
-           </color>
-          </brush>
-         </colorrole>
-        </disabled>
-       </palette>
-      </property>
-      <property name="text">
-       <string>Movies</string>
-      </property>
-     </widget>
-     <widget class="QRadioButton" name="series_radioButton_2">
-      <property name="geometry">
-       <rect>
-        <x>153</x>
-        <y>73</y>
-        <width>67</width>
-        <height>23</height>
-       </rect>
-      </property>
-      <property name="palette">
-       <palette>
-        <active>
-         <colorrole role="Base">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>173</red>
-            <green>127</green>
-            <blue>168</blue>
-           </color>
-          </brush>
-         </colorrole>
-        </active>
-        <inactive>
-         <colorrole role="Base">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>173</red>
-            <green>127</green>
-            <blue>168</blue>
-           </color>
-          </brush>
-         </colorrole>
-        </inactive>
-        <disabled>
-         <colorrole role="Base">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>49</red>
-            <green>29</green>
-            <blue>63</blue>
-           </color>
-          </brush>
-         </colorrole>
-        </disabled>
-       </palette>
-      </property>
-      <property name="text">
-       <string>Series</string>
-      </property>
-     </widget>
      <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
@@ -835,14 +681,14 @@
       <property name="geometry">
        <rect>
         <x>72</x>
-        <y>103</y>
+        <y>63</y>
         <width>261</width>
-        <height>441</height>
+        <height>481</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
-        <widget class="QTextBrowser" name="year_textBrowser_2">
+        <widget class="QTextBrowser" name="genre_textBrowser">
          <property name="palette">
           <palette>
            <active>

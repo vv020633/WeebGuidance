@@ -45,65 +45,6 @@ class Model(QtWidgets.QMainWindow):
 
 
 
-    #Function which filters data from the Jikan API into something that we can use
-    def apiToYearMenu(self, year_combo, movie_radiobutton, text_browser):
-        #Assign the widgets within the window
-        self.year_combo = year_combo
-        self.year = str(self.year_combo.currentText())
-        self.movie_radiobutton = movie_radiobutton
-        self.text_browser = text_browser
-        
-
-        try:
-   
-            self.one_year_anime = self.combineSeasons(self.year)
-          
-            #Split the movies and titles
-            self.movies, self.series = self.movieSeriesSplit(self.one_year_anime)
-            #Create lists of keys
-            self.movies_keys = self.movies.keys()
-            self.series_keys = self.series.keys()
-            #Create alphabetically sorted lists of keys
-            self.series_sorted = sorted(self.series_keys)
-            self.movies_sorted = sorted(self.movies_keys)
-            
-
-            #series without duplicates
-            self.series_distinct = []
-
-            #Remove duplicate entries from being displayed
-            for self.anime in self.series_sorted:
-                if self.anime not in self.series_distinct:
-                    self.series_distinct.append(self.anime)
-            
-            #If the user has selected the radio button indicating to filter the output to films
-            if self.movie_radiobutton.isChecked() == True:
-                self.text_browser.clear()
-                if len(self.movies_sorted) == 0:
-                    self.text_browser.append('Could not locate any titles matching this criteria. Sorry mate, better luck elsewhere.')
-                else:
-                    self.text_browser.append('******** ' + str(self.year) +  'Movies' + ' ********' + '\n')
-                    for self.movie in self.movies_sorted:
-                        self.text_browser.append( '['+ '<a href="' + self.movies[self.movie] + f'">{self.movie}</a>' + ']' + '\n')
-                    
-            #If the user has selected the radio button indicating to filter the output to series
-            elif self.movie_radiobutton.isChecked() == False:
-                self.text_browser.clear()
-                if len(self.series_sorted) :
-                    self.text_browser.append('Could not locate any titles matching this criteria. Sorry mate, better luck elsewhere.')
-                else:  
-                    self.text_browser.append('***** ' + str(self.year) + ' Airing' +  ' Series' + ' *****' + '\n')
-                    for self.show in self.series_sorted:
-                        self.text_browser.append( '['+ '<a href="' + self.series[self.show] + f'">{self.show}</a>' + ']' + '\n')
-
-
-        except ConnectionError:
-            print('Could not connect to the MAL API at: https://api.jikan.moe/v3')
-
-        except:
-            self.text_browser.clear()
-            self.text_browser.append('Could not locate any titles matching this criteria. Sorry mate, better luck elsewhere.')
-            
     # Function to select a random year to find films and titles for
     def yearRandomize(self, current_year, radiobutton, text_browser, combobox):
         
@@ -207,9 +148,9 @@ class Model(QtWidgets.QMainWindow):
                 
                 for self.film in self.movies_sorted:
                     #Retrieve the url and score values from the movie dictionary to append to the list
-                    self.show_metadata = self.movies[self.film]
-                    self.url = self.show_metadata[0]
-                    self.score = self.show_metadata[1]
+                    self.series_metadata = self.movies[self.film]
+                    self.url = self.series_metadata[0]
+                    self.score = self.series_metadata[1]
                     self.text_browser.append( '['+ '<a href="' + self.url + f'">{self.film}</a>' + ']' + '\n')
                     self.text_browser.append('Score: ' + str(self.score))
                     self.text_browser.append('- - - - - - - - - - - - - - - - - - - - - - - - - - - - -')
@@ -220,14 +161,52 @@ class Model(QtWidgets.QMainWindow):
             else:
                 self.text_browser.append('***** ' + self.year + ' Airing Series' + ' *****' + '\n')  
                 for self.show in self.series_sorted:
-                    self.show_metadata = self.series[self.show]
-                    self.url = self.show_metadata[0]
-                    self.score = self.show_metadata[1]
+                    self.series_metadata = self.series[self.show]
+                    self.url = self.series_metadata[0]
+                    self.score = self.series_metadata[1]
                     
                     self.text_browser.append( '['+ '<a href="' + self.url+ f'">{self.show}</a>' + ']' + '\n')
                     self.text_browser.append('Score: ' + str(self.score) ) 
                     self.text_browser.append('- - - - - - - - - - - - - - - - - - - - - - - - - - - - -')
-            
+
+    #Function which filters data from the Jikan API into something that we can use
+    def filterGenre(self, genre_dict, genre_combobox, text_browser):
+        self.genre_dict = genre_dict
+        self.text_browser = text_browser
+        self.genre_combobox = genre_combobox
+        self.genre_id = self.genre_dict[self.genre_combobox.currentText()]
+
+        self.series = {}
+        self.anime_genre = jikan.genre(type = 'anime', genre_id = self.genre_id)
+        # self.movies, self.series = self.movieSeriesSplit(self.anime_genre)
+        self.results = self.anime_genre['anime']
+        
+        for self.result in self.results:
+            for self.key, self.value in self.result.items():
+                if self.key == 'title':
+                    self.title = self.value
+                if self.key == 'score':
+                    self.score = self.value
+                if self.key =='url':
+                    self.url = self.value
+            self.series_metadata = [self.score, self.url]
+            self.series[self.title] = self.series_metadata
+            self.series_sorted = sorted(self.series.keys())
+                    
+        
+                 
+        self.text_browser.clear()
+        for self.show in self.series_sorted:
+                self.series_metadata = self.series[self.show]
+                self.score = self.series_metadata[0]
+                self.url = self.series_metadata[1]
+                
+                self.text_browser.append( '['+ '<a href="' + self.url+ f'">{self.show}</a>' + ']' + '\n')
+                self.text_browser.append('Score: ' + str(self.score))
+                self.text_browser.append('- - - - - - - - - - - - - - - - - - - - - - - - - - - - -')
+        
+        
+                    
     #Combines the four seasons of anime queries into one year
     def combineSeasons(self, year):
         self.year = year
@@ -490,23 +469,22 @@ class DiscoverWindow(QtWidgets.QMainWindow):
 
         self.model = Model()
 
-        #Values to fill the genrecombobox with
-        self.genres = ['Action', 'Adventure', 'Cars', 'Comedy', 'Dementia', 'Demons', 'Mystery', 'Drama', 'Ecchi',
-        'Fantasy', 'Game', 'Hentai', 'Historical', 'Horror', 'Kids', 'Magic', 'Martial Arts',
-        'Mecha', 'Music', 'Parody', 'Samurai', 'Romance', 'School', 'Sci Fi', 'Shoujo',
-        'Shoujo Ai', 'Shounen', 'Shounen Ai', 'Space', 'Sports', 'Super Power', 'Vampire', 'Yaoi',
-        'Yuri', 'Harem', 'Slice Of Life', 'Supernatural', 'Military', 'Police', 'Psychological', 'Thriller',
-        'Seinen', 'Josei']
+        #Genres and their respective genre ids. This will be used to fill the genre combobox with values and to query the API
+        self.genres = {'Action' : 1, 'Adventure' : 2, 'Cars' : 3, 'Comedy' : 4, 'Dementia' : 5, 'Demons' : 6, 'Mystery' : 7, 'Drama' : 8, 'Ecchi' : 9,
+        'Fantasy' : 10, 'Game' : 11, 'Hentai' : 12, 'Historical' : 13, 'Horror' : 14, 'Kids' : 15, 'Magic' : 16, 'Martial Arts' : 17,
+        'Mecha' : 18, 'Music' : 19, 'Parody' : 20, 'Samurai' : 21, 'Romance' : 22, 'School' : 23, 'Sci Fi' : 24, 'Shoujo' : 25,
+        'Shoujo Ai' : 26, 'Shounen' : 27, 'Shounen Ai' : 28, 'Space' : 29, 'Sports' : 30, 'Super Power' : 31, 'Vampire' : 32, 'Yaoi' : 33,
+        'Yuri' : 34, 'Harem' : 35, 'Slice Of Life' : 36, 'Supernatural' : 37, 'Military' : 38, 'Police' : 39, 'Psychological' : 40, 'Thriller' : 41,
+        'Seinen' : 42, 'Josei' : 43}
 
         #Assigning the widgets within the window
         self.filter_year_button = self.findChild(QtWidgets.QPushButton, 'filter_year_button')
         self.filter_genre_button = self.findChild(QtWidgets.QPushButton, 'filter_genre_button')
         self.year_combo = self.findChild(QtWidgets.QComboBox, 'year')
         self.genre_combo = self.findChild(QtWidgets.QComboBox, 'genre_combo')
-        self.year_text_browser = self.findChild(QtWidgets.QTextBrowser, 'year_textBrowser')
-        self.year_genre_browser = self.findChild(QtWidgets.QTextBrowser, 'genre_textBrowser')
+        self.year_textbrowser = self.findChild(QtWidgets.QTextBrowser, 'year_textBrowser')
+        self.genre_textbrowser = self.findChild(QtWidgets.QTextBrowser, 'genre_textBrowser')
         self.series_radiobutton = self.findChild(QtWidgets.QRadioButton, 'series_radioButton')
-        self.series_radiobutton_2 = self.findChild(QtWidgets.QRadioButton, 'series_radioButton_2')
         self.movies_radiobutton = self.findChild(QtWidgets.QRadioButton, 'movies_radioButton')
         self.back_button = self.findChild(QtWidgets.QCommandLinkButton, 'backButton')
         self.back_button_2 = self.findChild(QtWidgets.QCommandLinkButton, 'backButton_2')
@@ -514,10 +492,10 @@ class DiscoverWindow(QtWidgets.QMainWindow):
 
         #Set the series radio button to be the one that's checked on startup
         self.series_radiobutton.setChecked(True)
-        self.series_radiobutton_2.setChecked(True)
         
 
-        self.filter_year_button.clicked.connect(lambda: self.model.filterYear(self.year_combo, self.year_text_browser, self.movies_radiobutton))
+        self.filter_year_button.clicked.connect(lambda: self.model.filterYear(self.year_combo, self.year_textbrowser, self.movies_radiobutton))
+        self.filter_genre_button.clicked.connect(lambda: self.model.filterGenre(self.genres, self.genre_combo, self.genre_textbrowser))
 
         #Assign click events to the main menu buttons
         self.back_button.clicked.connect(self.home)
@@ -527,7 +505,7 @@ class DiscoverWindow(QtWidgets.QMainWindow):
         #Get the current date/year
         self.now = datetime.datetime.now()
         self.current_year = self.now.year
-        self.rand_button.clicked.connect(lambda: self.model.yearRandomize(self.current_year, self.movies_radiobutton, self.year_text_browser, self.year_combo))
+        self.rand_button.clicked.connect(lambda: self.model.yearRandomize(self.current_year, self.movies_radiobutton, self.year_textbrowser, self.year_combo))
 
        
         #Fill the combobox with values ranging from 1926 up until the current year. 1926 should be where the first record dates back to
@@ -535,14 +513,14 @@ class DiscoverWindow(QtWidgets.QMainWindow):
             self.year_combo.addItem(str(self.year))
 
         #Fill the combobox with the genre values that MAL uses to categorize their anime
-        for self.genre in self.genres:
+        for self.genre in self.genres.keys():
             self.genre_combo.addItem(str(self.genre))
     
     #Function to return to the Main Window
     def home(self):
 
         self.hide()
-        self.mainWindow = MainWindow()
+        main_win = MainWindow()
         
 ########### This is the Top UI through which all functions pertaining to the Top Window will be created ##################
 class TopWindow(QtWidgets.QMainWindow):
@@ -581,6 +559,8 @@ class TopWindow(QtWidgets.QMainWindow):
         self.pixmap = QPixmap(self.image_path)
         self.label.setPixmap(self.pixmap)
         self.pixmap2 = self.pixmap.scaled(500, 500)
+
+        os.chdir(dname)
     
         # for self.count in range(0,20):
         #     try:
@@ -643,9 +623,9 @@ class TopWindow(QtWidgets.QMainWindow):
         self.back_button.clicked.connect(lambda : self.home())
 
     def home(self):
-        os.chdir(dname)
+    
         self.hide()
-        self.main = MainWindow()
+        main_win = MainWindow()
 
     ################## Function to change the display image/Pixmap for the TopUpcoming window ##################
     def changeImage(self, count, label, model):
