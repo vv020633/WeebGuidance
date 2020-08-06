@@ -196,6 +196,9 @@ class Model(QtWidgets.QMainWindow):
         
                  
         self.text_browser.clear()
+
+        self.text_browser.appen()
+
         for self.show in self.series_sorted:
                 self.series_metadata = self.series[self.show]
                 self.score = self.series_metadata[0]
@@ -204,8 +207,48 @@ class Model(QtWidgets.QMainWindow):
                 self.text_browser.append( '['+ '<a href="' + self.url+ f'">{self.show}</a>' + ']' + '\n')
                 self.text_browser.append('Score: ' + str(self.score))
                 self.text_browser.append('- - - - - - - - - - - - - - - - - - - - - - - - - - - - -')
+
+    #Randomize the selection of the user's genre selection   
+    def genreRandomize(self, text_browser, combo_box, genre):
+        self.text_browser = text_browser
+        self.combobox = combo_box
+        self.genre = genre
+        self.random_genre = random.randint(1, len(self.genre))
+        self.anime_genre =  jikan.genre('anime', self.random_genre)
+
+        self.genre_titles = []
+        self.series = {}
+
+        #Placing the titles of the the genre dictionary into a list so that they can be retrieved using their id
+        for self.title in self.genre.keys():
+            self.genre_titles.append(self.title)
+
+        self.results = self.anime_genre['anime']
         
+        for self.result in self.results:
+            for self.key, self.value in self.result.items():
+                if self.key == 'title':
+                    self.title = self.value
+                if self.key == 'score':
+                    self.score = self.value
+                if self.key =='url':
+                    self.url = self.value
+            self.series_metadata = [self.score, self.url]
+            self.series[self.title] = self.series_metadata
+            self.series_sorted = sorted(self.series.keys())
         
+        self.text_browser.clear()
+        self.text_browser.append('*** ' + self.genre_titles[self.random_genre-1] +  ' Titles' + ' ***' + '\n')
+        for self.show in self.series_sorted:
+                self.series_metadata = self.series[self.show]
+                self.score = self.series_metadata[0]
+                self.url = self.series_metadata[1]
+                
+                self.text_browser.append( '['+ '<a href="' + self.url+ f'">{self.show}</a>' + ']' + '\n')
+                self.text_browser.append('Score: ' + str(self.score))
+                self.text_browser.append('- - - - - - - - - - - - - - - - - - - - - - - - - - - - -')
+
+
                     
     #Combines the four seasons of anime queries into one year
     def combineSeasons(self, year):
@@ -226,13 +269,6 @@ class Model(QtWidgets.QMainWindow):
             except:
                 print('No titles found for the' + self.season)
 
-
-
-    def genreRandomize(self, radio_button, text_browser, combo_box):
-        self.radiobutton = radio_button
-        self.text_browser = text_browser
-        self.combobox = combo_box
-
                 
     def randYearSetState(self):
 
@@ -244,7 +280,6 @@ class Model(QtWidgets.QMainWindow):
             self.rand_state == True
         
         return self.rand_state
-        
             
         
     #Used to split an incoming list of titles into movies and series        
@@ -430,9 +465,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.top_button = self.findChild(QtWidgets.QPushButton, 'topUpcoming_button')
         self.discover_button = self.findChild(QtWidgets.QPushButton, 'discover_button')
+        self.rand_button = self.findChild(QtWidgets.QPushButton, 'rand_button')
 
         self.top_button.clicked.connect(self.topUpcomingMenu)
         self.discover_button.clicked.connect(self.discoverMenu)
+        self.rand_button.clicked.connect(self.randomMenu)
         
         self.search_field.textChanged.connect(lambda: self.model.apiToMainMenu(self.search_field))
         self.show() #Show the GUI
@@ -451,7 +488,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.discover_window = DiscoverWindow()
     
     def randomMenu(self):
-        print('Placeholder')
+        self.hide()
+        # self.rand_window = RandomWindow()
 
 ########### This is the Top UI through which all functions pertaining to the Discover Window will be created ##################
 class DiscoverWindow(QtWidgets.QMainWindow):
@@ -489,6 +527,8 @@ class DiscoverWindow(QtWidgets.QMainWindow):
         self.back_button = self.findChild(QtWidgets.QCommandLinkButton, 'backButton')
         self.back_button_2 = self.findChild(QtWidgets.QCommandLinkButton, 'backButton_2')
         self.rand_button = self.findChild(QtWidgets.QPushButton, 'randButton')
+        self.rand_button_2 = self.findChild(QtWidgets.QPushButton, 'randButton_2')
+
 
         #Set the series radio button to be the one that's checked on startup
         self.series_radiobutton.setChecked(True)
@@ -506,6 +546,7 @@ class DiscoverWindow(QtWidgets.QMainWindow):
         self.now = datetime.datetime.now()
         self.current_year = self.now.year
         self.rand_button.clicked.connect(lambda: self.model.yearRandomize(self.current_year, self.movies_radiobutton, self.year_textbrowser, self.year_combo))
+        self.rand_button_2.clicked.connect(lambda: self.model.genreRandomize(self.genre_textbrowser, self.genre_combo, self.genres))
 
        
         #Fill the combobox with values ranging from 1926 up until the current year. 1926 should be where the first record dates back to
