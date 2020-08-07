@@ -21,6 +21,7 @@ class Model(QtWidgets.QMainWindow):
     def _init_(self):
         print('placeholder')
 
+    #Retrieves values for the main menu's predictive text search bar
     def apiToMainMenu(self, search_field):
         self.search_field = search_field
        
@@ -197,7 +198,7 @@ class Model(QtWidgets.QMainWindow):
                  
         self.text_browser.clear()
 
-        self.text_browser.appen()
+        
 
         for self.show in self.series_sorted:
                 self.series_metadata = self.series[self.show]
@@ -238,7 +239,7 @@ class Model(QtWidgets.QMainWindow):
             self.series_sorted = sorted(self.series.keys())
         
         self.text_browser.clear()
-        self.text_browser.append('*** ' + self.genre_titles[self.random_genre-1] +  ' Titles' + ' ***' + '\n')
+        self.text_browser.append('  {' + self.genre_titles[self.random_genre-1]  + '} - Series' + '\n')
         for self.show in self.series_sorted:
                 self.series_metadata = self.series[self.show]
                 self.score = self.series_metadata[0]
@@ -247,7 +248,6 @@ class Model(QtWidgets.QMainWindow):
                 self.text_browser.append( '['+ '<a href="' + self.url+ f'">{self.show}</a>' + ']' + '\n')
                 self.text_browser.append('Score: ' + str(self.score))
                 self.text_browser.append('- - - - - - - - - - - - - - - - - - - - - - - - - - - - -')
-
 
                     
     #Combines the four seasons of anime queries into one year
@@ -268,6 +268,51 @@ class Model(QtWidgets.QMainWindow):
                 return self.one_year_anime
             except:
                 print('No titles found for the' + self.season)
+    #
+    def randSeason(self):
+
+        
+
+        self.seasons = ['spring', 'summer','fall', 'winter']
+
+        self.now = datetime.datetime.now()
+
+        self.current_year = self.now.year
+
+        self.random_loop = True
+
+        while self.random_loop:
+            self.year_list = []
+
+            for self.year in range(1926, self.current_year + 1):
+                self.year_list.append(self.year)
+        
+            #retrieve random values for the year, season, and anime title
+            self.rand_year = self.year_list[random.randint(0, len(self.year_list)-1)]
+            self.rand_season = self.seasons[random.randint(0, len(self.seasons)-1)]
+                
+            self.anime_season = jikan.season(year = self.rand_year, season = self.rand_season)
+
+            self.rand_anime = self.anime_season['anime']
+
+            if len(self.rand_anime) >= 1:
+                self.random_loop = False
+                return self.rand_anime
+            else:
+                print('None returned')
+                time.sleep(0.25)
+                continue
+            #  self.random_loop = False
+
+    # This function is used to  generate a random anime to be outputted onto the "Random" menu
+    def randAnime(self, anime_season):
+
+        self.anime_season = anime_season 
+        
+        self.rand_choice = random.randint(0, len(self.anime_season) - 1)
+        self.rand_anime = self.anime_season[self.rand_choice]
+        pprint.pprint(self.rand_anime)
+
 
                 
     def randYearSetState(self):
@@ -325,7 +370,7 @@ class Model(QtWidgets.QMainWindow):
         return self.movies, self.series       
         
 
-    #Function which filters data from the JiKan API into something that we can use
+    #Filters data from the JiKan API into the top upcoming data that we can use
     def apiToTopWindow(self):
         
         try:
@@ -462,7 +507,6 @@ class MainWindow(QtWidgets.QMainWindow):
         uic.loadUi('mainWindow.ui', self) #Load the mainwindow .ui file
 
         self.search_field = self.findChild(QtWidgets.QLineEdit, 'search_field')
-
         self.top_button = self.findChild(QtWidgets.QPushButton, 'topUpcoming_button')
         self.discover_button = self.findChild(QtWidgets.QPushButton, 'discover_button')
         self.rand_button = self.findChild(QtWidgets.QPushButton, 'rand_button')
@@ -475,21 +519,20 @@ class MainWindow(QtWidgets.QMainWindow):
         self.show() #Show the GUI
 
 
-
     #Top Upcoming anime GUI
     def topUpcomingMenu(self):
         self.hide() #Hide the main window
         self.top = TopWindow()
         
-
     #Discovery Menu GUI
     def discoverMenu(self):
         self.hide() #Hide the main window
         self.discover_window = DiscoverWindow()
-    
+
+    # Radnom Menu GUI
     def randomMenu(self):
-        self.hide()
-        # self.rand_window = RandomWindow()
+        self.hide() #Hide the main window
+        self.rand_window = RandomWindow()
 
 ########### This is the Top UI through which all functions pertaining to the Discover Window will be created ##################
 class DiscoverWindow(QtWidgets.QMainWindow):
@@ -632,6 +675,7 @@ class TopWindow(QtWidgets.QMainWindow):
         self.top_button17 = self.findChild(QtWidgets.QPushButton, 'top_button17')
         self.top_button18 = self.findChild(QtWidgets.QPushButton, 'top_button18')
         self.top_button19 = self.findChild(QtWidgets.QPushButton, 'top_button19')
+
         self.top_button0.clicked.connect(lambda : self.changeImage(0, self.label, self.model))
         self.top_button1.clicked.connect(lambda : self.changeImage(1, self.label, self.model))     
         self.top_button2.clicked.connect(lambda : self.changeImage(2, self.label, self.model))  
@@ -700,6 +744,28 @@ class TopWindow(QtWidgets.QMainWindow):
         self.model.setWikiToken(self.wikiToken)
         self.model.setYoutubeToken(self.youToken)
 
+########### This is the Random UI through which all functions pertaining to the Random Window will be created ##################
+class RandomWindow(QtWidgets.QMainWindow):
+
+    def __init__(self):
+        
+        self.abspath = os.path.abspath(__file__)
+        self.dname = os.path.dirname(abspath)
+        os.chdir(self.dname)
+
+        super(RandomWindow, self).__init__()
+
+        #Load the random ui file
+        uic.loadUi('random.ui', self)
+
+        self.show()
+        self.model = Model()
+        self.model.createImgFolder()
+        self.image_directory_name = self.dname = '/img'
+
+        self.rand_season = self.model.randSeason()
+        self.model.randAnime(self.rand_season)
+        
 
 
 def run():

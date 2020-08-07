@@ -6,9 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>776</width>
-    <height>840</height>
+    <width>800</width>
+    <height>850</height>
    </rect>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>800</width>
+    <height>850</height>
+   </size>
   </property>
   <property name="palette">
    <palette>
@@ -1287,13 +1293,13 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>776</width>
+     <width>800</width>
      <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
-     <string>Help</string>
+     <string>About</string>
     </property>
     <addaction name="actionAbout"/>
    </widget>
@@ -1302,7 +1308,12 @@
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionAbout">
    <property name="text">
-    <string>About</string>
+    <string>Help</string>
+   </property>
+  </action>
+  <action name="actionCheck_API_connectivity">
+   <property name="text">
+    <string>Check API connection</string>
    </property>
   </action>
  </widget>
