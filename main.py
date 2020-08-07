@@ -84,7 +84,7 @@ class Model(QtWidgets.QMainWindow):
                     if len(self.movies) >= 1:
                         self.randomize = False
                         self.text_browser.clear()
-                        self.text_browser.append('******** ' + str(self.year) +  ' Movies' + ' ********' + '\n')
+                        self.text_browser.append('********{' + str(self.year) +  '} Movies' + ' ********' + '\n')
 
                         for self.film in self.movies_sorted:
                             #Filter out the url and score from the dictionary to append to the screen
@@ -103,7 +103,7 @@ class Model(QtWidgets.QMainWindow):
                     if len(self.series) >=1:
                         self.randomize = False
                         self.text_browser.clear()
-                        self.text_browser.append('***** ' + str(self.year) + ' Airing' +  ' Series' + ' *****' + '\n')
+                        self.text_browser.append('*****{' + str(self.year) + ' Airing' +  '} Series' + ' *****' + '\n')
 
                         for self.show in self.series_sorted:
 
@@ -311,10 +311,17 @@ class Model(QtWidgets.QMainWindow):
         
         self.rand_choice = random.randint(0, len(self.anime_season) - 1)
         self.rand_anime = self.anime_season[self.rand_choice]
-        pprint.pprint(self.rand_anime)
+
+        self.title = self.rand_anime['title']
+        self.url = self.rand_anime['url']
+        self.image_url = self.rand_anime['image_url']
+        self.episodes = self.rand_anime['episodes']
+        self.score = self.rand_anime['score']
+        self.synopsis = self.rand_anime['synopsis']
+
+        return self.title, self.url, self.image_url, self.episodes, self.score, self.synopsis
 
 
-                
     def randYearSetState(self):
 
         self.rand_state = rand_state
@@ -764,7 +771,30 @@ class RandomWindow(QtWidgets.QMainWindow):
         self.image_directory_name = self.dname = '/img'
 
         self.rand_season = self.model.randSeason()
-        self.model.randAnime(self.rand_season)
+        self.title, self.url, self.image_url, self.episodes, self.score, self.synopsis = self.model.randAnime(self.rand_season)
+
+        self.title_value = self.findChild(QtWidgets.QLabel, 'title_value')
+        self.episodes_value = self.findChild(QtWidgets.QLabel, 'episodes_value')
+        self.score_value = self.findChild(QtWidgets.QLabel, 'score_value')
+        self.synopsis_value = self.findChild(QtWidgets.QLabel, 'synopsis_value')
+        self.home_button = self.findChild(QtWidgets.QCommandLinkButton, 'back_button')
+
+    
+
+        self.title_value.setText( '{'+ '<a href="' + self.url + f'">{self.title}</a>' + '}')
+        self.episodes_value.setText('[' + str(self.episodes) + ']')
+        self.score_value.setText('[' + str(self.score) + ']')
+
+        self.synopsis_value.setText(self.synopsis)
+
+        self.home_button.clicked.connect(self.home)
+
+    #Function to return to the Main Window
+    def home(self):
+
+        self.hide()
+        main_win = MainWindow()
+        
         
 
 
