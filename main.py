@@ -15,13 +15,12 @@ os.chdir(dname)
 
 tmp_path = dname + '/tmp'
 
-if not os.path.exists(tmp_path):  #Create the image directory if it doesn't already exist
+#Create the temporary directory if it doesn't already exist
+if not os.path.exists(tmp_path):  
     os.makedirs(tmp_path)
 
-#The path of our temp folder which will store files that will be wiped after closing the 
+#The path of our temp folder which will store files that will be wiped after closing the app
 tmp_directory = tempfile.TemporaryDirectory(dir=tmp_path) 
-
-
 
 ########### This is the Model class through which all functions that respond to changes in the  UI exist ##################
 class Model(QtWidgets.QMainWindow):
@@ -341,21 +340,7 @@ class Model(QtWidgets.QMainWindow):
         self.synopsis = self.rand_anime['synopsis']
 
         return self.title, self.url, self.image_url, self.episodes, self.score, self.synopsis
-
-
-    # def randYearSetState(self):
-
-    #     self.rand_state = rand_state
-    #     if self.rand_state == True:
-    #         self.rand_state = False
-        
-    #     elif self.rand_state == False:
-    #         self.rand_state == True
-        
-    #     return self.rand_state
-            
-        
-    #Used to split an incoming list of titles into movies and series        
+      
     def movieSeriesSplit(self, anime_list):
 
         self.anime_list = anime_list 
@@ -537,6 +522,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.rand_button.clicked.connect(self.randomMenu)
         
         self.search_field.textChanged.connect(lambda: self.model.apiToMainMenu(self.search_field))
+
+        self.titles, self.ranks, self.start_dates, self.url = self.model.apiToTopWindow()
+
+        self.img_directory = tmp_directory.name
+        os.chdir(self.img_directory) #Change to the image directory
+        
+            
+        with concurrent.futures.ThreadPoolExecutor() as executor: #Multi-threading to execute multiple downloads simultaneously
+        
+            self.results_cap = [0, 1 ,2 ,3, 4, 5 , 6, 7, 8, 9, 10, 11, 12 ,13 ,14 ,15 ,16 ,17, 18, 19, 20] # The limit of results that will be returned
+            self.f1 = executor.map(self.model.downloadImage, self.results_cap) # Download the images for the GUI
+
         self.show() #Show the GUI
 
 
@@ -638,26 +635,8 @@ class TopWindow(QtWidgets.QMainWindow):
         
         self.show()
         self.model = Model()
-        # self.img_directory = self.model.createImgFolder()
-        # self.image_directory = dname + '/tmp'
         self.img_directory = tmp_directory.name
-        self.titles, self.ranks, self.start_dates, self.url = self.model.apiToTopWindow()
     
-        os.chdir(self.img_directory) #Change to the image directory
-        self.label = self.findChild(QtWidgets.QLabel, 'top_img')
-    
-        for self.count in range(len(self.titles)):
-            try:
-                self.top_button = self.findChild(QtWidgets.QPushButton, 'top_button' + str(self.count))
-                self.top_button.setText('[' + str(self.count + 1) + ']' + ': ' + self.titles[self.count])
-            
-            except:
-                print(f'Title: {self.titles[self.count]} will not be appended')
-            
-        with concurrent.futures.ThreadPoolExecutor() as executor: #Multi-threading to execute multiple downloads simultaneously
-        
-            self.results_cap = [0, 1 ,2 ,3, 4, 5 , 6, 7, 8, 9, 10, 11, 12 ,13 ,14 ,15 ,16 ,17, 18, 19, 20] # The limit of results that will be returned
-            self.f1 = executor.map(self.model.downloadImage, self.results_cap) # Download the images for the GUI
           
         #Set the default image to the first image in the image directory
         self.label = self.findChild(QtWidgets.QLabel, 'top_img')
@@ -666,6 +645,7 @@ class TopWindow(QtWidgets.QMainWindow):
         self.label.setPixmap(self.pixmap)
         self.pixmap2 = self.pixmap.scaled(500, 500)
 
+        #Change to main directory
         os.chdir(dname)
     
         # for self.count in range(0,20):
@@ -674,6 +654,19 @@ class TopWindow(QtWidgets.QMainWindow):
         #         self.top_button.clicked.connect(lambda : self.changeImage(self.count, self.label))   
         #     except:
         #             print('fail')
+
+        self.titles, self.ranks, self.start_dates, self.url = self.model.apiToTopWindow()
+
+        for self.count in range(len(self.titles)):
+            try:
+                self.top_button = self.findChild(QtWidgets.QPushButton, 'top_button' + str(self.count))
+                self.top_button.setText('[' + str(self.count + 1) + ']' + ': ' + self.titles[self.count])
+            
+            except:
+                print(f'Title: {self.titles[self.count]} will not be appended')
+
+
+        self.label = self.findChild(QtWidgets.QLabel, 'top_img')
         
         self.back_button = self.findChild(QtWidgets.QCommandLinkButton, 'backButton')
 
@@ -737,7 +730,7 @@ class TopWindow(QtWidgets.QMainWindow):
     ################## Function to change the display image/Pixmap for the TopUpcoming window ##################
     def changeImage(self, count, label, model, img_directory):
 
-        super(TopWindow, self).__init__()
+        # super(TopWindow, self).__init__()
         
         
         self.count = count
@@ -750,8 +743,9 @@ class TopWindow(QtWidgets.QMainWindow):
         self.image_path = self.img_directory + '/img' + str(self.count) 
         #Set the image as the background
         self.pixmap = QPixmap(self.image_path)
+        
         self.label.setPixmap(self.pixmap)
-        self.pixmap2 = self.pixmap.scaled(500, 500)
+        
 
         try:
             self.search_string = self.titles[self.count]
@@ -767,6 +761,8 @@ class TopWindow(QtWidgets.QMainWindow):
 
 ########### This is the Random UI through which all functions pertaining to the Random Window will be created ##################
 class RandomWindow(QtWidgets.QMainWindow):
+    
+    
 
     def __init__(self):
         
@@ -786,45 +782,57 @@ class RandomWindow(QtWidgets.QMainWindow):
     
         self.rand_button.clicked.connect(self.appendRandom)
         
+        
+    def appendRandom(self):
+        
+        self.already_viewed = []
 
-    #Function to return to the Main Window
+        self.random_loop = True
+
+        while self.random_loop:
+
+            self.rand_season = self.model.randSeason()
+            self.title, self.url, self.image_url, self.episodes, self.score, self.synopsis = self.model.randAnime(self.rand_season)
+            if self.title not in self.already_viewed:
+
+                self.random_loop = False
+
+                self.title_value = self.findChild(QtWidgets.QLabel, 'title_value')
+                self.episodes_value = self.findChild(QtWidgets.QLabel, 'episodes_value')
+                self.score_value = self.findChild(QtWidgets.QLabel, 'score_value')
+                self.synopsis_value = self.findChild(QtWidgets.QLabel, 'synopsis_value')
+                self.image = self.findChild(QtWidgets.QLabel, 'rand_image')
+                self.home_button = self.findChild(QtWidgets.QCommandLinkButton, 'back_button')
+
+                self.already_viewed.append(self.title)
+
+                #Download the corresponding image
+                os.chdir(tmp_directory.name)
+                self.local_file = urllib.request.urlretrieve(self.image_url, self.title)
+                self.image_path = tmp_directory.name + '/' + self.title
+                self.pixmap = QPixmap(self.image_path)
+                self.image.setPixmap(self.pixmap)
+                self.pixmap2 = self.pixmap.scaled(2000, 2000)
+                os.chdir(dname)
+
+
+                #Append the values to the screen
+                self.title_value.setText( '{'+ '<a href="' + self.url + f'">{self.title}</a>' + '}')
+                self.episodes_value.setText('[' + str(self.episodes) + ']')
+                self.score_value.setText('[' + str(self.score) + ']')
+
+                self.synopsis_value.setText(self.synopsis)
+
+                self.home_button.clicked.connect(self.home)
+
+            else:
+                continue
+
+     #Function to return to the Main Window
     def home(self):
 
         self.hide()
         main_win2 = MainWindow()
-
-    def appendRandom(self):
-        
-        
-        self.rand_season = self.model.randSeason()
-        self.title, self.url, self.image_url, self.episodes, self.score, self.synopsis = self.model.randAnime(self.rand_season)
-
-        self.title_value = self.findChild(QtWidgets.QLabel, 'title_value')
-        self.episodes_value = self.findChild(QtWidgets.QLabel, 'episodes_value')
-        self.score_value = self.findChild(QtWidgets.QLabel, 'score_value')
-        self.synopsis_value = self.findChild(QtWidgets.QLabel, 'synopsis_value')
-        self.image = self.findChild(QtWidgets.QLabel, 'rand_image')
-        self.home_button = self.findChild(QtWidgets.QCommandLinkButton, 'back_button')
-
-        #Download the corresponding image
-        os.chdir(tmp_directory.name)
-        self.local_file = urllib.request.urlretrieve(self.image_url, self.title)
-        self.image_path = tmp_directory.name + '/' + self.title
-        self.pixmap = QPixmap(self.image_path)
-        self.image.setPixmap(self.pixmap)
-        self.pixmap2 = self.pixmap.scaled(2000, 2000)
-        os.chdir(dname)
-
-        
-        #Append the values to the screen
-        self.title_value.setText( '{'+ '<a href="' + self.url + f'">{self.title}</a>' + '}')
-        self.episodes_value.setText('[' + str(self.episodes) + ']')
-        self.score_value.setText('[' + str(self.score) + ']')
-
-        self.synopsis_value.setText(self.synopsis)
-
-        self.home_button.clicked.connect(self.home)
-
         
 
 def run():
