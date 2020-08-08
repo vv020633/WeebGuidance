@@ -2,7 +2,7 @@ from PyQt5 import QtWidgets, uic
 from PyQt5.QtWidgets import QAction, QCompleter
 from PyQt5.QtGui import QIcon, QPixmap
 from jikanpy import Jikan
-import sys, os, time, datetime, pprint, webbrowser, concurrent.futures, random, threading
+import sys, os, time, datetime, pprint, webbrowser, concurrent.futures, random, threading, tempfile, atexit
 import urllib.request
 
 #Instance of our Jikan class which allows for communication with the Jikan MyAnimeList API. This is the foundation of this application
@@ -13,13 +13,29 @@ abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
 
-rand_state = True
+tmp_path = dname + '/tmp'
+
+if not os.path.exists(tmp_path):  #Create the image directory if it doesn't already exist
+    os.makedirs(tmp_path)
+
+#The path of our temp folder which will store files that will be wiped after closing the 
+tmp_directory = tempfile.TemporaryDirectory(dir=tmp_path) 
+
+
+
 ########### This is the Model class through which all functions that respond to changes in the  UI exist ##################
 class Model(QtWidgets.QMainWindow):
     
 
+
     def _init_(self):
-        print('placeholder')
+
+        print('model')
+
+    def home_path(self):
+        self.abspath = os.path.abspath(__file__)
+        self.dname = os.path.dirname(abspath)
+        os.chdir(self.dname)
 
     #Retrieves values for the main menu's predictive text search bar
     def apiToMainMenu(self, search_field):
@@ -227,20 +243,27 @@ class Model(QtWidgets.QMainWindow):
         self.results = self.anime_genre['anime']
         
         for self.result in self.results:
+
             for self.key, self.value in self.result.items():
+
                 if self.key == 'title':
                     self.title = self.value
+
                 if self.key == 'score':
                     self.score = self.value
+
                 if self.key =='url':
                     self.url = self.value
+
             self.series_metadata = [self.score, self.url]
             self.series[self.title] = self.series_metadata
             self.series_sorted = sorted(self.series.keys())
         
         self.text_browser.clear()
         self.text_browser.append('  {' + self.genre_titles[self.random_genre-1]  + '} - Series' + '\n')
+
         for self.show in self.series_sorted:
+
                 self.series_metadata = self.series[self.show]
                 self.score = self.series_metadata[0]
                 self.url = self.series_metadata[1]
@@ -271,8 +294,6 @@ class Model(QtWidgets.QMainWindow):
     #
     def randSeason(self):
 
-        
-
         self.seasons = ['spring', 'summer','fall', 'winter']
 
         self.now = datetime.datetime.now()
@@ -302,7 +323,7 @@ class Model(QtWidgets.QMainWindow):
                 print('None returned')
                 time.sleep(0.25)
                 continue
-            #  self.random_loop = False
+            
 
     # This function is used to  generate a random anime to be outputted onto the "Random" menu
     def randAnime(self, anime_season):
@@ -322,16 +343,16 @@ class Model(QtWidgets.QMainWindow):
         return self.title, self.url, self.image_url, self.episodes, self.score, self.synopsis
 
 
-    def randYearSetState(self):
+    # def randYearSetState(self):
 
-        self.rand_state = rand_state
-        if self.rand_state == True:
-            self.rand_state = False
+    #     self.rand_state = rand_state
+    #     if self.rand_state == True:
+    #         self.rand_state = False
         
-        elif self.rand_state == False:
-            self.rand_state == True
+    #     elif self.rand_state == False:
+    #         self.rand_state == True
         
-        return self.rand_state
+    #     return self.rand_state
             
         
     #Used to split an incoming list of titles into movies and series        
@@ -423,14 +444,7 @@ class Model(QtWidgets.QMainWindow):
 
         self.local_file = urllib.request.urlretrieve(self.url[self.img_count], f'img{self.img_count}')
               
-    #Create the Image folder to store images
-    def createImgFolder(self):
 
-        img_directory = dname + '/img'
-
-        if not os.path.exists(img_directory):  #Create the image directory if it doesn't already exist
-            os.makedirs(img_directory)
-    
     #Generates the search token that's used to search on each site
     def generateSearchToken(self, title):
 
@@ -624,11 +638,12 @@ class TopWindow(QtWidgets.QMainWindow):
         
         self.show()
         self.model = Model()
-        self.model.createImgFolder()
-        self.image_directory = dname + '/img'
+        # self.img_directory = self.model.createImgFolder()
+        # self.image_directory = dname + '/tmp'
+        self.img_directory = tmp_directory.name
         self.titles, self.ranks, self.start_dates, self.url = self.model.apiToTopWindow()
     
-        os.chdir(self.image_directory) #Change to the image directory
+        os.chdir(self.img_directory) #Change to the image directory
         self.label = self.findChild(QtWidgets.QLabel, 'top_img')
     
         for self.count in range(len(self.titles)):
@@ -646,7 +661,7 @@ class TopWindow(QtWidgets.QMainWindow):
           
         #Set the default image to the first image in the image directory
         self.label = self.findChild(QtWidgets.QLabel, 'top_img')
-        self.image_path = self.image_directory + '/img0'
+        self.image_path = self.img_directory + '/img0'
         self.pixmap = QPixmap(self.image_path)
         self.label.setPixmap(self.pixmap)
         self.pixmap2 = self.pixmap.scaled(500, 500)
@@ -683,26 +698,26 @@ class TopWindow(QtWidgets.QMainWindow):
         self.top_button18 = self.findChild(QtWidgets.QPushButton, 'top_button18')
         self.top_button19 = self.findChild(QtWidgets.QPushButton, 'top_button19')
 
-        self.top_button0.clicked.connect(lambda : self.changeImage(0, self.label, self.model))
-        self.top_button1.clicked.connect(lambda : self.changeImage(1, self.label, self.model))     
-        self.top_button2.clicked.connect(lambda : self.changeImage(2, self.label, self.model))  
-        self.top_button3.clicked.connect(lambda : self.changeImage(3, self.label, self.model))  
-        self.top_button4.clicked.connect(lambda : self.changeImage(4, self.label, self.model))  
-        self.top_button5.clicked.connect(lambda : self.changeImage(5, self.label, self.model))  
-        self.top_button6.clicked.connect(lambda : self.changeImage(6, self.label, self.model))  
-        self.top_button7.clicked.connect(lambda : self.changeImage(7, self.label, self.model))  
-        self.top_button8.clicked.connect(lambda : self.changeImage(8, self.label, self.model))  
-        self.top_button9.clicked.connect(lambda : self.changeImage(9, self.label, self.model))  
-        self.top_button10.clicked.connect(lambda : self.changeImage(10, self.label, self.model))  
-        self.top_button11.clicked.connect(lambda : self.changeImage(11, self.label, self.model))  
-        self.top_button12.clicked.connect(lambda : self.changeImage(12, self.label, self.model))  
-        self.top_button13.clicked.connect(lambda : self.changeImage(13, self.label, self.model))  
-        self.top_button14.clicked.connect(lambda : self.changeImage(14, self.label, self.model))  
-        self.top_button15.clicked.connect(lambda : self.changeImage(15, self.label, self.model))  
-        self.top_button16.clicked.connect(lambda : self.changeImage(16, self.label, self.model))  
-        self.top_button17.clicked.connect(lambda : self.changeImage(17, self.label, self.model))  
-        self.top_button18.clicked.connect(lambda : self.changeImage(18, self.label, self.model))  
-        self.top_button19.clicked.connect(lambda : self.changeImage(19, self.label, self.model))  
+        self.top_button0.clicked.connect(lambda : self.changeImage(0, self.label, self.model, self.img_directory))
+        self.top_button1.clicked.connect(lambda : self.changeImage(1, self.label, self.model, self.img_directory))     
+        self.top_button2.clicked.connect(lambda : self.changeImage(2, self.label, self.model, self.img_directory))  
+        self.top_button3.clicked.connect(lambda : self.changeImage(3, self.label, self.model, self.img_directory))  
+        self.top_button4.clicked.connect(lambda : self.changeImage(4, self.label, self.model, self.img_directory))  
+        self.top_button5.clicked.connect(lambda : self.changeImage(5, self.label, self.model, self.img_directory))  
+        self.top_button6.clicked.connect(lambda : self.changeImage(6, self.label, self.model, self.img_directory))  
+        self.top_button7.clicked.connect(lambda : self.changeImage(7, self.label, self.model, self.img_directory))  
+        self.top_button8.clicked.connect(lambda : self.changeImage(8, self.label, self.model, self.img_directory))  
+        self.top_button9.clicked.connect(lambda : self.changeImage(9, self.label, self.model, self.img_directory))  
+        self.top_button10.clicked.connect(lambda : self.changeImage(10, self.label, self.model, self.img_directory))  
+        self.top_button11.clicked.connect(lambda : self.changeImage(11, self.label, self.model, self.img_directory))  
+        self.top_button12.clicked.connect(lambda : self.changeImage(12, self.label, self.model, self.img_directory))  
+        self.top_button13.clicked.connect(lambda : self.changeImage(13, self.label, self.model, self.img_directory))  
+        self.top_button14.clicked.connect(lambda : self.changeImage(14, self.label, self.model, self.img_directory))  
+        self.top_button15.clicked.connect(lambda : self.changeImage(15, self.label, self.model, self.img_directory))  
+        self.top_button16.clicked.connect(lambda : self.changeImage(16, self.label, self.model, self.img_directory))  
+        self.top_button17.clicked.connect(lambda : self.changeImage(17, self.label, self.model, self.img_directory))  
+        self.top_button18.clicked.connect(lambda : self.changeImage(18, self.label, self.model, self.img_directory))  
+        self.top_button19.clicked.connect(lambda : self.changeImage(19, self.label, self.model, self.img_directory))  
         ##################Assigning Variables for the search buttons ##################
         self.reddit_button = self.findChild(QtWidgets.QPushButton, 'reddit_button')
         self.wiki_button = self.findChild(QtWidgets.QPushButton, 'wiki_button')
@@ -720,7 +735,7 @@ class TopWindow(QtWidgets.QMainWindow):
         main_win = MainWindow()
 
     ################## Function to change the display image/Pixmap for the TopUpcoming window ##################
-    def changeImage(self, count, label, model):
+    def changeImage(self, count, label, model, img_directory):
 
         super(TopWindow, self).__init__()
         
@@ -728,12 +743,11 @@ class TopWindow(QtWidgets.QMainWindow):
         self.count = count
         self.label = label
         self.model = model
+        self.img_directory = self.img_directory
         
-        # Naming the image directiroy
-        self.image_directory = dname + '/img'
 
         #Naming the image downloads
-        self.image_path = self.image_directory + '/img' + str(self.count) 
+        self.image_path = self.img_directory + '/img' + str(self.count) 
         #Set the image as the background
         self.pixmap = QPixmap(self.image_path)
         self.label.setPixmap(self.pixmap)
@@ -756,9 +770,8 @@ class RandomWindow(QtWidgets.QMainWindow):
 
     def __init__(self):
         
-        self.abspath = os.path.abspath(__file__)
-        self.dname = os.path.dirname(abspath)
-        os.chdir(self.dname)
+        self.model = Model()
+        self.model.home_path()
 
         super(RandomWindow, self).__init__()
 
@@ -766,10 +779,23 @@ class RandomWindow(QtWidgets.QMainWindow):
         uic.loadUi('random.ui', self)
 
         self.show()
-        self.model = Model()
-        self.model.createImgFolder()
-        self.image_directory_name = self.dname = '/img'
 
+        self.rand_button = self.findChild(QtWidgets.QPushButton, 'rand_button')
+
+        self.appendRandom()
+    
+        self.rand_button.clicked.connect(self.appendRandom)
+        
+
+    #Function to return to the Main Window
+    def home(self):
+
+        self.hide()
+        main_win2 = MainWindow()
+
+    def appendRandom(self):
+        
+        
         self.rand_season = self.model.randSeason()
         self.title, self.url, self.image_url, self.episodes, self.score, self.synopsis = self.model.randAnime(self.rand_season)
 
@@ -777,10 +803,20 @@ class RandomWindow(QtWidgets.QMainWindow):
         self.episodes_value = self.findChild(QtWidgets.QLabel, 'episodes_value')
         self.score_value = self.findChild(QtWidgets.QLabel, 'score_value')
         self.synopsis_value = self.findChild(QtWidgets.QLabel, 'synopsis_value')
+        self.image = self.findChild(QtWidgets.QLabel, 'rand_image')
         self.home_button = self.findChild(QtWidgets.QCommandLinkButton, 'back_button')
 
-    
+        #Download the corresponding image
+        os.chdir(tmp_directory.name)
+        self.local_file = urllib.request.urlretrieve(self.image_url, self.title)
+        self.image_path = tmp_directory.name + '/' + self.title
+        self.pixmap = QPixmap(self.image_path)
+        self.image.setPixmap(self.pixmap)
+        self.pixmap2 = self.pixmap.scaled(2000, 2000)
+        os.chdir(dname)
 
+        
+        #Append the values to the screen
         self.title_value.setText( '{'+ '<a href="' + self.url + f'">{self.title}</a>' + '}')
         self.episodes_value.setText('[' + str(self.episodes) + ']')
         self.score_value.setText('[' + str(self.score) + ']')
@@ -789,18 +825,17 @@ class RandomWindow(QtWidgets.QMainWindow):
 
         self.home_button.clicked.connect(self.home)
 
-    #Function to return to the Main Window
-    def home(self):
-
-        self.hide()
-        main_win = MainWindow()
         
-        
-
 
 def run():
     app = QtWidgets.QApplication(sys.argv) # Creates an instance of our application
     window = MainWindow() # Creates an instance of our window class
     app.exec_()  #Start the app
 
+#Tasks to do upon closing the application
+def exit_handler():
+    tmp_directory.cleanup()
+
+atexit.register(exit_handler)
 run()
+
