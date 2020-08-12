@@ -1,6 +1,7 @@
-from PyQt5 import QtWidgets, uic
+from PyQt5 import QtCore, QtWidgets, uic
 from PyQt5.QtWidgets import QAction, QCompleter
 from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtCore import Qt
 from jikanpy import Jikan
 import sys, os, time, datetime, pprint, webbrowser, concurrent.futures, random, threading, tempfile, atexit
 import urllib.request
@@ -22,14 +23,15 @@ if not os.path.exists(tmp_path):
 #The path of our temp folder which will store files that will be wiped after closing the app
 tmp_directory = tempfile.TemporaryDirectory(dir=tmp_path) 
 
+
 ########### This is the Model class through which all functions that respond to changes in the  UI exist ##################
 class Model(QtWidgets.QMainWindow):
     
 
 
-    def _init_(self):
-
-        print('model')
+    def __init__(self):
+        super(Model, self).__init__()
+        
 
     def home_path(self):
         self.abspath = os.path.abspath(__file__)
@@ -38,6 +40,8 @@ class Model(QtWidgets.QMainWindow):
 
     #Retrieves values for the main menu's predictive text search bar
     def apiToMainMenu(self, search_field):
+        
+         
         self.search_field = search_field
        
         #If the length of the text field is divisible by 3 or odd numbers over 3 then the values are retreived from the API. This is done to limit the number of inputs sent to the API by the user, which could results in an error
@@ -55,12 +59,16 @@ class Model(QtWidgets.QMainWindow):
 
             #Predictive text feature which display a best guest of search results based on the user's input
             self.completer = QCompleter(self.titles, self)
+            self.completer.setCaseSensitivity(Qt.CaseInsensitive)
             self.search_field.setCompleter(self.completer)    
 
-            pprint.pprint(self.results)
+            
 
+    def randEpisode(self, search_field):
+        self.search_field = search_field
+        print('testing')
 
-
+     
     # Function to select a random year to find films and titles for
     def yearRandomize(self, current_year, radiobutton, text_browser, combobox):
         
@@ -290,7 +298,7 @@ class Model(QtWidgets.QMainWindow):
                 return self.one_year_anime
             except:
                 print('No titles found for the' + self.season)
-    #
+    
     def randSeason(self):
 
         self.seasons = ['spring', 'summer','fall', 'winter']
@@ -507,10 +515,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self):
 
-        self.model = Model()
+        abspath = os.path.abspath(__file__)
+        dname = os.path.dirname(abspath)
+        os.chdir(dname)
+    
         super(MainWindow, self).__init__() # Call the inherited classes __init__ method
-
         uic.loadUi('mainWindow.ui', self) #Load the mainwindow .ui file
+
+        self.model = Model()
 
         self.search_field = self.findChild(QtWidgets.QLineEdit, 'search_field')
         self.top_button = self.findChild(QtWidgets.QPushButton, 'topUpcoming_button')
@@ -526,6 +538,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.titles, self.ranks, self.start_dates, self.url = self.model.apiToTopWindow()
 
         self.img_directory = tmp_directory.name
+
+    
         os.chdir(self.img_directory) #Change to the image directory
         
             
@@ -536,6 +550,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.show() #Show the GUI
 
+    #Handles what to do if the user presses the enter button. There's a better method of doing this 
+    #https://forum.qt.io/topic/103613/how-to-call-keypressevent-in-pyqt5-by-returnpressed/2
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Return:
+            self.model.randEpisode(self.search_field)
 
     #Top Upcoming anime GUI
     def topUpcomingMenu(self):
@@ -622,7 +641,7 @@ class DiscoverWindow(QtWidgets.QMainWindow):
     def home(self):
 
         self.hide()
-        main_win = MainWindow()
+        main_win3 = MainWindow()
         
 ########### This is the Top UI through which all functions pertaining to the Top Window will be created ##################
 class TopWindow(QtWidgets.QMainWindow):
@@ -725,13 +744,10 @@ class TopWindow(QtWidgets.QMainWindow):
     def home(self):
     
         self.hide()
-        main_win = MainWindow()
+        main_win4 = MainWindow()
 
     ################## Function to change the display image/Pixmap for the TopUpcoming window ##################
     def changeImage(self, count, label, model, img_directory):
-
-        # super(TopWindow, self).__init__()
-        
         
         self.count = count
         self.label = label
@@ -741,9 +757,8 @@ class TopWindow(QtWidgets.QMainWindow):
 
         #Naming the image downloads
         self.image_path = self.img_directory + '/img' + str(self.count) 
-        #Set the image as the background
+        #Set the image/Pixmap as the background of the label
         self.pixmap = QPixmap(self.image_path)
-        
         self.label.setPixmap(self.pixmap)
         
 
