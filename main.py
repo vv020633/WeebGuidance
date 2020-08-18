@@ -32,8 +32,20 @@ class Model(QtWidgets.QMainWindow):
     def __init__(self):
         super(Model, self).__init__()
     
-    def pingTest(self):
-        print('ping test')
+    #Makes a request to the webpage and returns a request code. This will be used to test the vailidity of URLs
+    def pingURL(self, search_url):
+
+        
+        self.search_url = search_url
+
+        try:
+            self.req = urllib.request.Request(self.search_url, headers={'User-Agent': 'Mozilla/5.0'})
+            self.web_byte = urllib.request.urlopen(self.req).getcode()
+            
+            return self.web_byte
+
+        except urllib.error.HTTPError as error:
+            print(error)
 
     def createSearchURL(self, search_string):
 
@@ -41,12 +53,41 @@ class Model(QtWidgets.QMainWindow):
         if ' ' in self.search_string:
             self.search_list = self.search_string.split()
             self.animix_search_token = '-'.join(self.search_list)
-            self.search_url = f'https://animix.play.com/v4/4-{self.animix_search_token.lower()}'
-            return self.search_url
+            self.search_url = f'https://animixplay.com/v4/4-{self.animix_search_token.lower()}'
+            
+            self.response = self.pingURL(self.search_url)
+            
+
+            if self.response == 200:
+                print(self.search_url)
+                return self.search_url
+            
+            else:
+                self.search_url = f'https://animixplay.com/v4/4-{self.search_list[0]}'
+
+                if self.response == 200:
+                    print(self.search_url)
+                    return self.search_url
+            
+
         
         else:
-            self.search_url = f'https://animix.play.com/v4/4-{self.search_string.lower()}'
-            return self.search_url
+            self.search_url = f'https://animixplay.com/v4/4-{self.search_string.lower()}'
+            self.response = self.pingURL(self.search_url)
+
+            if self.response == 200:
+                print(self.search_url)
+                return self.search_url
+            
+            else:
+                self.search_url = f'https://animixplay.com/v1/{self.search_string.lower()}'
+                self.response = self.pingURL(self.search_url)
+
+                if self.response == 200:
+                    print(self.search_url)
+                    return self.search_url
+
+                
 
         
 
@@ -110,13 +151,19 @@ class Model(QtWidgets.QMainWindow):
             
 
     def randEpisode(self, search_field):
+
         self.search_field = search_field
+
         if self.search_field.text() is not None:
+
             self.url = self.createSearchURL(self.search_field.text())
             self.episode_count_dict = self.getEpisodeCount()
+
+            #get the episode count of the anime that the user has chosen
             self.episode_count =  self.episode_count_dict[self.search_field.text()]
+
             print(self.episode_count_dict)
-            # print(self.episode_count)
+            
             
 
         else:
@@ -136,7 +183,7 @@ class Model(QtWidgets.QMainWindow):
         self.text_browser.clear()
             
         while self.randomize:
-
+            
             self.year = random.randint(1926, self.current_year + 1)
             self.one_year_anime = self.combineSeasons(self.year)
                 
@@ -250,13 +297,18 @@ class Model(QtWidgets.QMainWindow):
         self.genre_dict = genre_dict
         self.text_browser = text_browser
         self.genre_combobox = genre_combobox
+        
+        #Grabbing the genre id value which each genre of anime is assigned
         self.genre_id = self.genre_dict[self.genre_combobox.currentText()]
 
         self.series = {}
+
+        #Query the Jikan API for titles that fall under the chosen genre
         self.anime_genre = jikan.genre(type = 'anime', genre_id = self.genre_id)
-        # self.movies, self.series = self.movieSeriesSplit(self.anime_genre)
+        #Filter results  to return only titles classified as 'anime'
         self.results = self.anime_genre['anime']
         
+        #Retrieve the title, score, and url values from the results and store them for retrieval
         for self.result in self.results:
             for self.key, self.value in self.result.items():
                 if self.key == 'title':
@@ -268,13 +320,11 @@ class Model(QtWidgets.QMainWindow):
             self.series_metadata = [self.score, self.url]
             self.series[self.title] = self.series_metadata
             self.series_sorted = sorted(self.series.keys())
-                    
-        
-                 
+
+        #Clear the text browser             
         self.text_browser.clear()
 
-        
-
+        #Append series to the text browser using the values that were collected
         for self.show in self.series_sorted:
                 self.series_metadata = self.series[self.show]
                 self.score = self.series_metadata[0]
@@ -299,10 +349,12 @@ class Model(QtWidgets.QMainWindow):
         for self.title in self.genre.keys():
             self.genre_titles.append(self.title)
 
+        #Filter results to return only values values that are considered to be 'anime'
         self.results = self.anime_genre['anime']
         
         for self.result in self.results:
 
+            #Store the titles, scores, and urls, for retrieveal
             for self.key, self.value in self.result.items():
 
                 if self.key == 'title':
@@ -317,10 +369,12 @@ class Model(QtWidgets.QMainWindow):
             self.series_metadata = [self.score, self.url]
             self.series[self.title] = self.series_metadata
             self.series_sorted = sorted(self.series.keys())
-        
+
+        # Clear the text
         self.text_browser.clear()
         self.text_browser.append('  {' + self.genre_titles[self.random_genre-1]  + '} - Series' + '\n')
 
+        # Append the stored values to the text browser
         for self.show in self.series_sorted:
 
                 self.series_metadata = self.series[self.show]
@@ -340,6 +394,7 @@ class Model(QtWidgets.QMainWindow):
 
         #Loop over the data returned by querying over each season
         for self.season in self.seasons:
+
             #This try block is structured to filter down the list/dictionary of data returned by the json query and return the combined list of values
             try:
                 self.seasonal_list = jikan.season(year=self.year, season= self.season)
@@ -351,6 +406,7 @@ class Model(QtWidgets.QMainWindow):
             except:
                 print('No titles found for the' + self.season)
     
+    #Selects a random season to choose an anime from
     def randSeason(self):
 
         self.seasons = ['spring', 'summer','fall', 'winter']
@@ -364,13 +420,15 @@ class Model(QtWidgets.QMainWindow):
         while self.random_loop:
             self.year_list = []
 
+            #Fill the year list with values starting from 1926
             for self.year in range(1926, self.current_year + 1):
                 self.year_list.append(self.year)
         
             #retrieve random values for the year, season, and anime title
             self.rand_year = self.year_list[random.randint(0, len(self.year_list)-1)]
             self.rand_season = self.seasons[random.randint(0, len(self.seasons)-1)]
-                
+
+            #Query the JIkan API for a title based on a random year and season 
             self.anime_season = jikan.season(year = self.rand_year, season = self.rand_season)
 
             self.rand_anime = self.anime_season['anime']
@@ -389,9 +447,11 @@ class Model(QtWidgets.QMainWindow):
 
         self.anime_season = anime_season 
         
+        #Generate a random number within the length of the season in order to selecet a random anime
         self.rand_choice = random.randint(0, len(self.anime_season) - 1)
         self.rand_anime = self.anime_season[self.rand_choice]
 
+        #Assign values from the dictionary to separate variables to be returned
         self.title = self.rand_anime['title']
         self.url = self.rand_anime['url']
         self.image_url = self.rand_anime['image_url']
@@ -400,7 +460,8 @@ class Model(QtWidgets.QMainWindow):
         self.synopsis = self.rand_anime['synopsis']
 
         return self.title, self.url, self.image_url, self.episodes, self.score, self.synopsis
-      
+
+    #Function which splits an anime list into two separate lists composed of series and movies  
     def movieSeriesSplit(self, anime_list):
 
         self.anime_list = anime_list 
@@ -419,8 +480,6 @@ class Model(QtWidgets.QMainWindow):
                             self.movie_metadata = [self.url, self.rating]
                             self.movies[self.title] = self.movie_metadata
                             
-                            
-
                         #Split the show titles and their urls
                         else:
                             self.title = self.anime_dict['title']
@@ -435,14 +494,15 @@ class Model(QtWidgets.QMainWindow):
 
         #If either the movies or titles return None as a value then we want to replace it with an empty list    
         if self.movies is None:
+
             self.movies = []
+
         if self.series is None:
+
             self.movies = []
           
-
         return self.movies, self.series       
         
-
     #Filters data from the JiKan API into the top upcoming data that we can use
     def apiToTopWindow(self):
         
@@ -458,27 +518,43 @@ class Model(QtWidgets.QMainWindow):
         self.ranks = []
         self.start_dates = []
         self.url=[]
+
+        #Filter the original data down to all values that fall under the 'top' dictionary value
         for self.key,self.value  in self.top_anime.items():
+
           if self.key ==  'top':
+
                 self.anime_data = self.value
 
         #Loops through the list items in the anime dat list within
         for self.data in self.anime_data:
+
             for self.key, self.value in self.data.items():
 
-                #If the key matched the values that we want(rank, title, start_dates, url) then we'll grab those values
+                #If the key matched the values that we want(rank, title, start_dates, url) then grab those values
                 if self.key == 'rank':
+
                     self.ranks.append(self.value)
+
                 elif self.key == 'title':
+
                     self.titles.append(self.value)
+
                 elif self.key == 'start_date':
+
                     self.start_dates.append(self.value)
+
                 elif self.key == 'image_url':
+
                     self.url.append(self.value)
+
                     #Some values arrived as NoneTypes so this is there to remedy that
                     for self.date in range(0,len(self.start_dates)):
+
                         if self.start_dates[self.date] is None:
+
                             self.start_dates[self.date] = '-'
+
         #returns titles, ranks, and start_dates , and the url for the image          
         return self.titles, self.ranks, self.start_dates, self.url
     
@@ -486,10 +562,8 @@ class Model(QtWidgets.QMainWindow):
     def downloadImage(self, img_count):
         
         self.img_count = img_count
-
         self.local_file = urllib.request.urlretrieve(self.url[self.img_count], f'img{self.img_count}')
               
-
     #Generates the search token that's used to search on each site
     def generateSearchToken(self, title):
 
@@ -513,7 +587,6 @@ class Model(QtWidgets.QMainWindow):
     #Function to set the dictionary filled with titles and episodes that we're going to use for the episode count
     def setEpisodeCount(self, episode_dictionary):
         self.episode_dictionary = episode_dictionary
-
 
     ###########Functions to set the search tokens###########
     def setRedditToken(self, reddit_token):
@@ -850,7 +923,6 @@ class RandomWindow(QtWidgets.QMainWindow):
 
         #Load the random ui file
         uic.loadUi('random.ui', self)
-
         self.show()
 
         self.rand_button = self.findChild(QtWidgets.QPushButton, 'rand_button')
@@ -862,14 +934,19 @@ class RandomWindow(QtWidgets.QMainWindow):
         
     def appendRandom(self):
         
+        #Titles that have already been randomly selected
         self.already_viewed = []
 
         self.random_loop = True
 
         while self.random_loop:
 
+            #Select a random season
             self.rand_season = self.model.randSeason()
+            #Select a random title based on that season
             self.title, self.url, self.image_url, self.episodes, self.score, self.synopsis = self.model.randAnime(self.rand_season)
+
+            #Only append the data if the title hasn't already been viewed in the Random anime window
             if self.title not in self.already_viewed:
 
                 self.random_loop = False
@@ -881,6 +958,7 @@ class RandomWindow(QtWidgets.QMainWindow):
                 self.image = self.findChild(QtWidgets.QLabel, 'rand_image')
                 self.home_button = self.findChild(QtWidgets.QCommandLinkButton, 'back_button')
 
+                #Append this title to the list of viewed titles
                 self.already_viewed.append(self.title)
 
                 #Download the corresponding image
@@ -892,14 +970,13 @@ class RandomWindow(QtWidgets.QMainWindow):
                 self.pixmap2 = self.pixmap.scaled(2000, 2000)
                 os.chdir(dname)
 
-
                 #Append the values to the screen
                 self.title_value.setText( '{'+ '<a href="' + self.url + f'">{self.title}</a>' + '}')
                 self.episodes_value.setText('[' + str(self.episodes) + ']')
                 self.score_value.setText('[' + str(self.score) + ']')
-
                 self.synopsis_value.setText(self.synopsis)
 
+                #Home button
                 self.home_button.clicked.connect(self.home)
 
             else:
@@ -911,7 +988,6 @@ class RandomWindow(QtWidgets.QMainWindow):
         self.hide()
         main_win2 = MainWindow()
         
-
 def run():
     app = QtWidgets.QApplication(sys.argv) # Creates an instance of our application
     window = MainWindow() # Creates an instance of our window class
