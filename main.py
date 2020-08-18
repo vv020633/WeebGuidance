@@ -31,6 +31,23 @@ class Model(QtWidgets.QMainWindow):
 
     def __init__(self):
         super(Model, self).__init__()
+    
+    def pingTest(self):
+        print('ping test')
+
+    def createSearchURL(self, search_string):
+
+        self.search_string = search_string
+        if ' ' in self.search_string:
+            self.search_list = self.search_string.split()
+            self.animix_search_token = '-'.join(self.search_list)
+            self.search_url = f'https://animix.play.com/v4/4-{self.animix_search_token.lower()}'
+            return self.search_url
+        
+        else:
+            self.search_url = f'https://animix.play.com/v4/4-{self.search_string.lower()}'
+            return self.search_url
+
         
 
     def home_path(self):
@@ -39,40 +56,75 @@ class Model(QtWidgets.QMainWindow):
         os.chdir(self.dname)
 
     #Retrieves values for the main menu's predictive text search bar
-    def apiToMainMenu(self, search_field):
+    def apiToMainMenu(self, search_field, start_time):
         
-         
+
         self.search_field = search_field
-       
+
+        self.start_time = start_time
+
+        self.time_loop = True
+        
+        self.end_time = datetime.datetime.now()
+
+        while self.time_loop:
+            
+            self.total_time = self.end_time - self.start_time
+            if self.total_time.seconds >= 4:
+
+                self.time_loop = False
+            else:
+                continue
+
+            
         #If the length of the text field is divisible by 3 or odd numbers over 3 then the values are retreived from the API. This is done to limit the number of inputs sent to the API by the user, which could results in an error
-        if len(self.search_field.text()) == 3 or (len(self.search_field.text()) - 3) % 2 == 0:
+        if len(self.search_field.text()) >= 3 and self.total_time.seconds % 4 == 0:
 
             self.titles=[]
+
+            self.titles_episode_count = {}
             #Search parameter is set to retrieve anime only
             self.jikan_search = jikan.search('anime', search_field.text(), page=1)
            
-           #Filter the resultes to retrieve TV titles only 
+           #Filter the results to retrieve TV titles only 
             self.results = self.jikan_search['results']
             for self.result in self.results: 
                 if self.result['type'] == 'TV':
                     self.titles.append(self.result['title'])
 
+                    try:
+                        self.titles_episode_count[self.result['title']] = self.result['episodes']
+                    except ValueError:
+                        self.titles_episode_count[self.result['title']] = 'None'
+                    
+                    
+
             #Predictive text feature which display a best guest of search results based on the user's input
             self.completer = QCompleter(self.titles, self)
             self.completer.setCaseSensitivity(Qt.CaseInsensitive)
-            self.search_field.setCompleter(self.completer)    
+            self.search_field.setCompleter(self.completer)   
+
+            self.setEpisodeCount(self.titles_episode_count)
+            time.sleep(2) 
 
             
 
     def randEpisode(self, search_field):
         self.search_field = search_field
-        print('testing')
+        if self.search_field.text() is not None:
+            self.url = self.createSearchURL(self.search_field.text())
+            self.episode_count_dict = self.getEpisodeCount()
+            self.episode_count =  self.episode_count_dict[self.search_field.text()]
+            print(self.episode_count_dict)
+            # print(self.episode_count)
+            
+
+        else:
+            print('Please enter a series into the white field')
 
      
     # Function to select a random year to find films and titles for
     def yearRandomize(self, current_year, radiobutton, text_browser, combobox):
-        
-        #The active variable which will be used to determine how many times the Random button has been clicked
         
         self.current_year = current_year
         self.movie_radiobutton = radiobutton
@@ -458,6 +510,11 @@ class Model(QtWidgets.QMainWindow):
 
         return self.reddit_search_token, self.wikipedia_search_token, self.youtube_search_token
 
+    #Function to set the dictionary filled with titles and episodes that we're going to use for the episode count
+    def setEpisodeCount(self, episode_dictionary):
+        self.episode_dictionary = episode_dictionary
+
+
     ###########Functions to set the search tokens###########
     def setRedditToken(self, reddit_token):
         self.reddit_token = reddit_token
@@ -477,6 +534,10 @@ class Model(QtWidgets.QMainWindow):
 
     def getYoutubeToken(self):
         return self.youtube_token
+
+    #Function to get the dictionary filled with titles and episodes that  are going to be used for the episode count
+    def getEpisodeCount(self):
+        return self.episode_dictionary
 
     ###########Functions to search the Internet for data on the target title###########
     def redditSearch(self, reddit_token):
@@ -533,7 +594,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.discover_button.clicked.connect(self.discoverMenu)
         self.rand_button.clicked.connect(self.randomMenu)
         
-        self.search_field.textChanged.connect(lambda: self.model.apiToMainMenu(self.search_field))
+        self.start_time = datetime.datetime.now()
+        self.search_field.textChanged.connect(lambda: self.model.apiToMainMenu(self.search_field, self.start_time))
 
         self.titles, self.ranks, self.start_dates, self.url = self.model.apiToTopWindow()
 

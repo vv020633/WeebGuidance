@@ -337,7 +337,7 @@
      <string>This field is used to select a random episode of a series</string>
     </property>
     <property name="maxLength">
-     <number>30</number>
+     <number>100</number>
     </property>
     <property name="placeholderText">
      <string>Search...</string>
