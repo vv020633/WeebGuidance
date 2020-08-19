@@ -87,11 +87,9 @@ class Model(QtWidgets.QMainWindow):
                     print(self.search_url)
                     return self.search_url
 
-                
-
-        
 
     def home_path(self):
+
         self.abspath = os.path.abspath(__file__)
         self.dname = os.path.dirname(abspath)
         os.chdir(self.dname)
@@ -154,20 +152,25 @@ class Model(QtWidgets.QMainWindow):
 
         self.search_field = search_field
 
-        if self.search_field.text() is not None:
+        #Create url based on the text field
+        self.url = self.createSearchURL(self.search_field.text())
+        #Get episode count if it exists
+        self.episode_count_dict = self.getEpisodeCount()
 
-            self.url = self.createSearchURL(self.search_field.text())
-            self.episode_count_dict = self.getEpisodeCount()
+        #get the episode count of the anime that the user has chosen
+        self.episode_count =  self.episode_count_dict[self.search_field.text()]
 
-            #get the episode count of the anime that the user has chosen
-            self.episode_count =  self.episode_count_dict[self.search_field.text()]
-
-            print(self.episode_count_dict)
-            
-            
+        if self.episode_count == 0 or self.episode_count == 'None':
+            print('Series is ongoing')
 
         else:
-            print('Please enter a series into the white field')
+            self.episode_number = random.randint(1, self.episode_count)
+            self.episode_url = self.url + '/ep' + str(self.episode_number)
+            webbrowser.open(self.episode_url)
+        
+            
+            
+
 
      
     # Function to select a random year to find films and titles for
