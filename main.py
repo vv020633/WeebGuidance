@@ -1,10 +1,15 @@
+
+
+import sys, os, time, datetime, pprint, webbrowser, concurrent.futures, random, threading, tempfile, atexit, requests, bs4
+import urllib.request
 from PyQt5 import QtCore, QtWidgets, uic
 from PyQt5.QtWidgets import QAction, QCompleter
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtCore import Qt
 from jikanpy import Jikan
-import sys, os, time, datetime, pprint, webbrowser, concurrent.futures, random, threading, tempfile, atexit
-import urllib.request
+from bs4 import BeautifulSoup
+
+
 
 #Instance of our Jikan class which allows for communication with the Jikan MyAnimeList API. This is the foundation of this application
 jikan = Jikan()
@@ -24,7 +29,7 @@ if not os.path.exists(tmp_path):
 tmp_directory = tempfile.TemporaryDirectory(dir=tmp_path) 
 
 
-########### This is the Model class through which all functions that respond to changes in the  UI exist ##################
+###########* This is the Model class through which all functions that respond to changes in the  UI exist *##################
 class Model(QtWidgets.QMainWindow):
     
 
@@ -32,7 +37,7 @@ class Model(QtWidgets.QMainWindow):
     def __init__(self):
         super(Model, self).__init__()
     
-    #Makes a request to the webpage and returns a request code. This will be used to test the vailidity of URLs
+    #* Makes a request to the webpage and returns a request code. This will be used to test the vailidity of URLs
     def pingURL(self, search_url):
 
         
@@ -46,14 +51,18 @@ class Model(QtWidgets.QMainWindow):
 
         except urllib.error.HTTPError as error:
             print(error)
-
+            
+    #* Creates the search URL that will be used to search for the web page of a specific series
     def createSearchURL(self, search_string):
 
+        # TODO: Wrap this in a try catch to account for failed connections
+        
         self.search_string = search_string
         if ' ' in self.search_string:
             self.search_list = self.search_string.split()
             self.animix_search_token = '-'.join(self.search_list)
-            self.search_url = f'https://animixplay.com/v4/4-{self.animix_search_token.lower()}'
+            self.setGoGoToken(self.animix_search_token) #Storing this token for later use
+            self.search_url = f'https://animixplay.com/v1/{self.animix_search_token.lower()}'
             
             self.response = self.pingURL(self.search_url)
             
@@ -63,7 +72,7 @@ class Model(QtWidgets.QMainWindow):
                 return self.search_url
             
             else:
-                self.search_url = f'https://animixplay.com/v4/4-{self.search_list[0]}'
+                self.search_url = f'https://animixplay.com/v1/{self.search_list[0]}'
 
                 if self.response == 200:
                     print(self.search_url)
@@ -72,7 +81,7 @@ class Model(QtWidgets.QMainWindow):
 
         
         else:
-            self.search_url = f'https://animixplay.com/v4/4-{self.search_string.lower()}'
+            self.search_url = f'https://animixplay.com/v1/{self.search_string.lower()}'
             self.response = self.pingURL(self.search_url)
 
             if self.response == 200:
@@ -80,12 +89,37 @@ class Model(QtWidgets.QMainWindow):
                 return self.search_url
             
             else:
-                self.search_url = f'https://animixplay.com/v1/{self.search_string.lower()}'
+                self.search_url = f'https://animixplay.com/v4/4-{self.search_string.lower()}'
                 self.response = self.pingURL(self.search_url)
 
                 if self.response == 200:
                     print(self.search_url)
                     return self.search_url
+    
+    #* This function will be used to grab the latest episode from the streaming site's webpage
+    #This is to account for series which are 'ongoing' and thus will not return an episode count from the API
+    def getLatestEpisode(self):
+
+        # TODO: Add a try catch block to account for gogoanime responding with a 404 error in the html 
+        # TODO: Rework this function using the button class on animixplay
+        self.gogo_token = self.getGoGoToken()
+        self.gogoanime_url = f'https://www.gogoanime.io/category/{self.gogo_token}'
+        print(self.gogoanime_url)
+        self.request = requests.get(self.gogoanime_url)
+        self.source = self.request.content
+        self.soup = BeautifulSoup(self.source, 'lxml')
+        
+        #The only link returned from this URL with the class "active" should contain the "ep_end" and "ep_start" for the title
+        self.links = self.soup.find(class_= "active")
+        #Get the text of the returned html which should contain
+        self.newest_episodes_range = str(self.links.text)
+        #Split the episode end and episode start values which are separated by a "-" Visit the url for a better explanation
+        #? example https://www.gogoanime.movie/category/One-Piece
+        
+        self.newest_episodes_value = self.newest_episodes_range.split('-') 
+        self.episode_count = self.newest_episodes_value[1]
+
+        return self.episode_count
 
 
     def home_path(self):
@@ -94,7 +128,7 @@ class Model(QtWidgets.QMainWindow):
         self.dname = os.path.dirname(abspath)
         os.chdir(self.dname)
 
-    #Retrieves values for the main menu's predictive text search bar
+    #* Retrieves values for the main menu's predictive text search bar
     def apiToMainMenu(self, search_field, start_time):
         
 
@@ -124,8 +158,8 @@ class Model(QtWidgets.QMainWindow):
             self.titles_episode_count = {}
             #Search parameter is set to retrieve anime only
             self.jikan_search = jikan.search('anime', search_field.text(), page=1)
-           
-           #Filter the results to retrieve TV titles only 
+            
+            #Filter the results to retrieve TV titles only 
             self.results = self.jikan_search['results']
             for self.result in self.results: 
                 if self.result['type'] == 'TV':
@@ -160,20 +194,25 @@ class Model(QtWidgets.QMainWindow):
         #get the episode count of the anime that the user has chosen
         self.episode_count =  self.episode_count_dict[self.search_field.text()]
 
+        #If the series is ongoing it will have an episode count of none, in which case the
+        #Episode count will be gathered from the html in the webpage   
+        
         if self.episode_count == 0 or self.episode_count == 'None':
-            print('Series is ongoing')
-
+            
+            self.episode_count = self.getLatestEpisode()
+            self.episode_number = random.randint(1, int(self.episode_count))
+            self.episode_url = self.url + '/ep' + str(self.episode_number)
+            print(self.episode_url)
+            webbrowser.open(self.episode_url)
+            
         else:
-            self.episode_number = random.randint(1, self.episode_count)
+            
+            self.episode_number = random.randint(1, int(self.episode_count))
             self.episode_url = self.url + '/ep' + str(self.episode_number)
             webbrowser.open(self.episode_url)
         
-            
-            
-
-
-     
-    # Function to select a random year to find films and titles for
+        
+    #* Function to select a random year to find films and titles for
     def yearRandomize(self, current_year, radiobutton, text_browser, combobox):
         
         self.current_year = current_year
@@ -187,7 +226,7 @@ class Model(QtWidgets.QMainWindow):
             
         while self.randomize:
             
-            self.year = random.randint(1926, self.current_year + 1)
+            self.year = random.randint(1926, self.current_year)
             self.one_year_anime = self.combineSeasons(self.year)
                 
             #Split the movies and titles
@@ -243,7 +282,7 @@ class Model(QtWidgets.QMainWindow):
             except TypeError:
                 continue
 
-    #Function that is used to 
+    #* Function that is used to 
     def filterYear(self, year, text_browser,movie_radiobutton ):
         
         self.year = year
@@ -295,7 +334,7 @@ class Model(QtWidgets.QMainWindow):
                     self.text_browser.append('Score: ' + str(self.score) ) 
                     self.text_browser.append('- - - - - - - - - - - - - - - - - - - - - - - - - - - - -')
 
-    #Function which filters data from the Jikan API into something that we can use
+    #* Function which filters data from the Jikan API into something that we can use
     def filterGenre(self, genre_dict, genre_combobox, text_browser):
         self.genre_dict = genre_dict
         self.text_browser = text_browser
@@ -337,7 +376,7 @@ class Model(QtWidgets.QMainWindow):
                 self.text_browser.append('Score: ' + str(self.score))
                 self.text_browser.append('- - - - - - - - - - - - - - - - - - - - - - - - - - - - -')
 
-    #Randomize the selection of the user's genre selection   
+    #* Randomize the selection of the user's genre selection   
     def genreRandomize(self, text_browser, combo_box, genre):
         self.text_browser = text_browser
         self.combobox = combo_box
@@ -389,7 +428,7 @@ class Model(QtWidgets.QMainWindow):
                 self.text_browser.append('- - - - - - - - - - - - - - - - - - - - - - - - - - - - -')
 
                     
-    #Combines the four seasons of anime queries into one year
+    #* Combines the four seasons of anime queries into one year
     def combineSeasons(self, year):
         self.year = year
         self.seasons = ['spring', 'summer','fall', 'winter']
@@ -409,7 +448,7 @@ class Model(QtWidgets.QMainWindow):
             except:
                 print('No titles found for the' + self.season)
     
-    #Selects a random season to choose an anime from
+    #* Selects a random season to choose an anime from
     def randSeason(self):
 
         self.seasons = ['spring', 'summer','fall', 'winter']
@@ -445,7 +484,7 @@ class Model(QtWidgets.QMainWindow):
                 continue
             
 
-    # This function is used to  generate a random anime to be outputted onto the "Random" menu
+    #* This function is used to  generate a random anime to be outputted onto the "Random" menu
     def randAnime(self, anime_season):
 
         self.anime_season = anime_season 
@@ -464,7 +503,7 @@ class Model(QtWidgets.QMainWindow):
 
         return self.title, self.url, self.image_url, self.episodes, self.score, self.synopsis
 
-    #Function which splits an anime list into two separate lists composed of series and movies  
+    #* Function which splits an anime list into two separate lists composed of series and movies  
     def movieSeriesSplit(self, anime_list):
 
         self.anime_list = anime_list 
@@ -506,7 +545,7 @@ class Model(QtWidgets.QMainWindow):
           
         return self.movies, self.series       
         
-    #Filters data from the JiKan API into the top upcoming data that we can use
+    #* Filters data from the JiKan API into the top upcoming data that we can use
     def apiToTopWindow(self):
         
         try:
@@ -561,13 +600,13 @@ class Model(QtWidgets.QMainWindow):
         #returns titles, ranks, and start_dates , and the url for the image          
         return self.titles, self.ranks, self.start_dates, self.url
     
-    #Download the Images to use for the GUI
+    #* Download the Images to use for the GUI
     def downloadImage(self, img_count):
         
         self.img_count = img_count
         self.local_file = urllib.request.urlretrieve(self.url[self.img_count], f'img{self.img_count}')
               
-    #Generates the search token that's used to search on each site
+    #* Generates the search token that's used to search on each site
     def generateSearchToken(self, title):
 
         self.title = title
@@ -587,11 +626,11 @@ class Model(QtWidgets.QMainWindow):
 
         return self.reddit_search_token, self.wikipedia_search_token, self.youtube_search_token
 
-    #Function to set the dictionary filled with titles and episodes that we're going to use for the episode count
+    #* Function to set the dictionary filled with titles and episodes that we're going to use for the episode count
     def setEpisodeCount(self, episode_dictionary):
         self.episode_dictionary = episode_dictionary
 
-    ###########Functions to set the search tokens###########
+    ###########* Functions to set the search tokens *###########
     def setRedditToken(self, reddit_token):
         self.reddit_token = reddit_token
     
@@ -600,8 +639,11 @@ class Model(QtWidgets.QMainWindow):
     
     def setYoutubeToken(self, youtube_token):
         self.youtube_token = youtube_token
+        
+    def setGoGoToken(self, gogo_token):
+        self.gogo_token = gogo_token
     
-    ###########Functions to retrieve the search tokens###########
+    ###########* Functions to retrieve the search tokens *###########
     def getRedditToken(self):
         return self.reddit_token
 
@@ -610,12 +652,15 @@ class Model(QtWidgets.QMainWindow):
 
     def getYoutubeToken(self):
         return self.youtube_token
+    
+    def getGoGoToken(self):
+        return self.gogo_token
 
-    #Function to get the dictionary filled with titles and episodes that  are going to be used for the episode count
+    #* Function to get the dictionary filled with titles and episodes that  are going to be used for the episode count
     def getEpisodeCount(self):
         return self.episode_dictionary
 
-    ###########Functions to search the Internet for data on the target title###########
+    ###########* Functions to search the Internet for data on the target title *###########
     def redditSearch(self, reddit_token):
         self.reddit_token = reddit_token
 
@@ -647,7 +692,7 @@ class Model(QtWidgets.QMainWindow):
             print(f'Could not connect to destination: {self.youtube_link}' )
         
 
-##################This is the Main UI through which all functions that will act upon our main Window ##################
+##################*This is the Main UI through which all functions that will act upon our main Window *##################
 class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self):
@@ -688,28 +733,28 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.show() #Show the GUI
 
-    #Handles what to do if the user presses the enter button. There's a better method of doing this 
+    #* Handles what to do if the user presses the enter button. There's a better method of doing this 
     #https://forum.qt.io/topic/103613/how-to-call-keypressevent-in-pyqt5-by-returnpressed/2
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Return:
             self.model.randEpisode(self.search_field)
 
-    #Top Upcoming anime GUI
+    #* Top Upcoming anime GUI
     def topUpcomingMenu(self):
         self.hide() #Hide the main window
         self.top = TopWindow()
         
-    #Discovery Menu GUI
+    #* Discovery Menu GUI
     def discoverMenu(self):
         self.hide() #Hide the main window
         self.discover_window = DiscoverWindow()
 
-    # Radnom Menu GUI
+    #* Random Menu GUI
     def randomMenu(self):
         self.hide() #Hide the main window
         self.rand_window = RandomWindow()
 
-########### This is the Top UI through which all functions pertaining to the Discover Window will be created ##################
+###########* This is the Top UI through which all functions pertaining to the Discover Window will be created *##################
 class DiscoverWindow(QtWidgets.QMainWindow):
 
     def __init__(self):
@@ -775,26 +820,26 @@ class DiscoverWindow(QtWidgets.QMainWindow):
         for self.genre in self.genres.keys():
             self.genre_combo.addItem(str(self.genre))
     
-    #Function to return to the Main Window
+    #* Function to return to the Main Window
     def home(self):
 
         self.hide()
         main_win3 = MainWindow()
         
-########### This is the Top UI through which all functions pertaining to the Top Window will be created ##################
+###########* This is the Top UI through which all functions pertaining to the Top Window will be created *##################
 class TopWindow(QtWidgets.QMainWindow):
     
     def __init__(self):
         os.chdir(dname)
         super(TopWindow, self).__init__()
 
-        uic.loadUi('topUpcoming.ui', self) #Load the topUpcoming.ui file
+        #Load the topUpcoming.ui file
+        uic.loadUi('topUpcoming.ui', self) 
         
         self.show()
         self.model = Model()
         self.img_directory = tmp_directory.name
     
-          
         #Set the default image to the first image in the image directory
         self.label = self.findChild(QtWidgets.QLabel, 'top_img')
         self.image_path = self.img_directory + '/img0'
@@ -884,7 +929,7 @@ class TopWindow(QtWidgets.QMainWindow):
         self.hide()
         main_win4 = MainWindow()
 
-    ################## Function to change the display image/Pixmap for the TopUpcoming window ##################
+    #* Function to change the display image/Pixmap for the TopUpcoming window
     def changeImage(self, count, label, model, img_directory):
         
         self.count = count
@@ -914,7 +959,6 @@ class TopWindow(QtWidgets.QMainWindow):
 
 ########### This is the Random UI through which all functions pertaining to the Random Window will be created ##################
 class RandomWindow(QtWidgets.QMainWindow):
-    
     
 
     def __init__(self):
