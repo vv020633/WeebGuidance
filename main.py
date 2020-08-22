@@ -1,6 +1,6 @@
 
 
-import sys, os, time, datetime, pprint, webbrowser, concurrent.futures, random, threading, tempfile, atexit, requests, bs4
+import sys, os, time, datetime, pprint, webbrowser, concurrent.futures, random, threading, tempfile, atexit, requests, bs4, re
 import urllib.request
 from PyQt5 import QtCore, QtWidgets, uic
 from PyQt5.QtWidgets import QAction, QCompleter
@@ -75,7 +75,6 @@ class Model(QtWidgets.QMainWindow):
                 self.search_url = f'https://animixplay.com/v1/{self.search_list[0]}'
 
                 if self.response == 200:
-                    print(self.search_url)
                     return self.search_url
             
 
@@ -85,7 +84,6 @@ class Model(QtWidgets.QMainWindow):
             self.response = self.pingURL(self.search_url)
 
             if self.response == 200:
-                print(self.search_url)
                 return self.search_url
             
             else:
@@ -93,33 +91,48 @@ class Model(QtWidgets.QMainWindow):
                 self.response = self.pingURL(self.search_url)
 
                 if self.response == 200:
-                    print(self.search_url)
                     return self.search_url
     
     #* This function will be used to grab the latest episode from the streaming site's webpage
     #This is to account for series which are 'ongoing' and thus will not return an episode count from the API
     def getLatestEpisode(self):
 
-        # TODO: Add a try catch block to account for gogoanime responding with a 404 error in the html 
-        # TODO: Rework this function using the button class on animixplay
-        self.gogo_token = self.getGoGoToken()
-        self.gogoanime_url = f'https://www.gogoanime.io/category/{self.gogo_token}'
-        print(self.gogoanime_url)
-        self.request = requests.get(self.gogoanime_url)
+        # TODO: Add a try catch block to account for animixplay responding with a 404 error
+        
+        
+        self.animix_token = self.getGoGoToken()
+        self.animix_url = f'https://animixplay.com/v1/{self.animix_token}'
+        self.request = requests.get(self.animix_url)
         self.source = self.request.content
-        self.soup = BeautifulSoup(self.source, 'lxml')
+        self.soup = BeautifulSoup(self.source, 'html.parser')
         
-        #The only link returned from this URL with the class "active" should contain the "ep_end" and "ep_start" for the title
-        self.links = self.soup.find(class_= "active")
-        #Get the text of the returned html which should contain
-        self.newest_episodes_range = str(self.links.text)
-        #Split the episode end and episode start values which are separated by a "-" Visit the url for a better explanation
-        #? example https://www.gogoanime.movie/category/One-Piece
+        self.epslist_div = self.soup.find('div', id = 'epslistplace')
+        self.character_count = ''
+        self.total_found = False
+        self.eptotal_loop = True
         
-        self.newest_episodes_value = self.newest_episodes_range.split('-') 
-        self.episode_count = self.newest_episodes_value[1]
+        while self.total_found is False:
+            
+            for self.character in range(0, len(self.epslist_div.text)):
+                self.character_count += self.epslist_div.text[self.character]
 
-        return self.episode_count
+                if 'eptotal' in self.character_count:
+                    
+                    
+                    self.total_episodes = ' '
+                    self.count = 3
+                    
+                    while self.eptotal_loop:
+
+                        self.total_episodes+= self.epslist_div.text[self.character + self.count]
+                        self.count+=1
+
+                        if self.epslist_div.text[self.character + self.count] == ',':
+                            
+                            self.eptotal_loop = False
+                            self.total_found = True
+                            return int(self.total_episodes)
+                            
 
 
     def home_path(self):
@@ -178,7 +191,7 @@ class Model(QtWidgets.QMainWindow):
             self.search_field.setCompleter(self.completer)   
 
             self.setEpisodeCount(self.titles_episode_count)
-            time.sleep(2) 
+             
 
             
 
