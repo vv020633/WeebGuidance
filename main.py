@@ -53,12 +53,41 @@ class Model(QtWidgets.QMainWindow):
 
         else:
             return True
-        
+    
+    #* Displays the current connectivity of the API to the user based on the status messages that are retunred by the jikan API
     def apiStatus(self, text_edit):
         self.text_edit = text_edit
-        self.code = urllib.request.urlopen('https://api.jikan.moe/v3').getcode()
         
-        self.text_edit.setText(str(self.code))
+        try:
+            self.code = urllib.request.urlopen('https://api.jikan.moe/v3').getcode()
+            
+            if str(self.code) == '200':
+                self.text_edit.setText(f'Status Code: {str(self.code)} [OK] - Connection successful')
+                
+            elif str(self.code) == '304':
+                self.text_edit.setText(f'Status Code: {str(self.code)} [Not Modified]- You have the latest data')
+                
+            elif str(self.code) == '400':
+                self.text_edit.setText(f'Status Code: {str(self.code)} [Bad Request] - An invalid request has been made')
+                
+            elif str(self.code) == '404':
+                self.text_edit.setText(f'Status Code: {str(self.code)} [Not Found] - Resource not found')
+                
+            elif str(self.code) == '405':
+                self.text_edit.setText(f'Status Code: {str(self.code)} [Method Not Allowed] - requested method is not supported for resource ')
+                
+            elif str(self.code) == '429':
+                self.text_edit.setText(f'Status Code: {str(self.code)} [Too Many Requests] - You are being rate limited or JIkan is being rate limited by MyAnimeList ')
+
+            elif str(self.code) == '500':
+                self.text_edit.setText(f'Status Code: {str(self.code)} [Internal Server Error] - Something is wrong (Jikan API Error)')
+                
+            elif str(self.code) == '503':
+                self.text_edit.setText(f'Status Code: {str(self.code)} [Service Unavailable] - Something is not working on MyAnimeList\'s end')
+
+            
+        except:
+            self.text_edit.setText('A Connection could not be established at this time. Please Check Connectivity and try again.')
             
     #* Creates the search URL that will be used to search for the web page of a specific series
     def createSearchURL(self, search_string):
@@ -1118,13 +1147,11 @@ class ConnectionDialogue(QtWidgets.QDialog):
 
         #Load the connection ui file
         uic.loadUi('conn.ui', self)
-        self.show()
+        
         
         self.text_edit = self.findChild(QtWidgets.QTextEdit, 'textEdit')
-        
-        
-        
         self.model.apiStatus(self.text_edit)
+        self.show()
         
                 
         
