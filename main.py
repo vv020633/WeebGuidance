@@ -53,6 +53,12 @@ class Model(QtWidgets.QMainWindow):
 
         else:
             return True
+        
+    def apiStatus(self, text_edit):
+        self.text_edit = text_edit
+        self.code = urllib.request.urlopen('https://api.jikan.moe/v3').getcode()
+        
+        self.text_edit.setText(str(self.code))
             
     #* Creates the search URL that will be used to search for the web page of a specific series
     def createSearchURL(self, search_string):
@@ -62,7 +68,7 @@ class Model(QtWidgets.QMainWindow):
         
         self.search_string = search_string
         if ' ' in self.search_string:
-            self.search_list = self.search_string.split()
+            self.search_list = self.search_string.split()  
             self.animix_search_token = '-'.join(self.search_list)
             self.setAnimixToken(self.animix_search_token) #Storing this token for later use
             self.search_url = f'https://animixplay.com/v1/{self.animix_search_token.lower()}'
@@ -741,6 +747,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.paypal_action = self.findChild(QtWidgets.QAction, 'actionPaypal')
         self.paypal_action.triggered.connect(self.donatePaypal)
         
+        #Menu bar status option
+        self.connect_status = self.findChild(QtWidgets.QAction, 'actionStatus')
+        self.connect_status.triggered.connect(self.status)
+        
         self.search_field = self.findChild(QtWidgets.QLineEdit, 'search_field')
         self.top_button = self.findChild(QtWidgets.QPushButton, 'topUpcoming_button')
         self.discover_button = self.findChild(QtWidgets.QPushButton, 'discover_button')
@@ -796,6 +806,9 @@ class MainWindow(QtWidgets.QMainWindow):
     #* Open Paypal link
     def donatePaypal(self):
         webbrowser.open('https://paypal.me/McLaughlin007')
+        
+    def status(self):
+        self.connection_dialogue = ConnectionDialogue()
         
 ###########* This is the Top UI through which all functions pertaining to the Discover Window will be created *##################
 class DiscoverWindow(QtWidgets.QMainWindow):
@@ -1092,6 +1105,27 @@ class DonateDialogue(QtWidgets.QDialog):
         #Load the btc ui file
         uic.loadUi('btc.ui', self)
         self.show()
+        
+###########* This is the ConnectionDialogue UI  *##################
+class ConnectionDialogue(QtWidgets.QDialog):
+    
+    def __init__(self):
+        
+        self.model = Model()
+        self.model.home_path()
+
+        super(ConnectionDialogue, self).__init__()
+
+        #Load the connection ui file
+        uic.loadUi('conn.ui', self)
+        self.show()
+        
+        self.text_edit = self.findChild(QtWidgets.QTextEdit, 'textEdit')
+        
+        
+        
+        self.model.apiStatus(self.text_edit)
+        
                 
         
 def run():

@@ -110,6 +110,9 @@
   <property name="windowTitle">
    <string>weeb-Guidance</string>
   </property>
+  <property name="windowOpacity">
+   <double>0.975000000000000</double>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
