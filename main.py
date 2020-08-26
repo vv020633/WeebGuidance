@@ -37,44 +37,55 @@ class Model(QtWidgets.QMainWindow):
     def __init__(self):
         super(Model, self).__init__()
     
-    #* Makes a request to the webpage and returns a request code. This will be used to test the vailidity of URLs
+    #* Makes a request to the webpage and returns a request code. This will be used to test the vailidity of URLs 
+    #Animixplay returns a page with an html error embedded in the html, so this method works better than pinging the webpage
     def pingURL(self, search_url):
 
-        
+        #Make a request to the webpage and use BeautifulSoup to search for a 404 error or signs of one being loaded
         self.search_url = search_url
+        self.request = requests.get(self.search_url)
+        self.source = self.request.content
+        self.soup = BeautifulSoup(self.source, 'html.parser')
+        self.error_span = self.soup.find('span', class_ = 'animetitle')
+        
+        if self.error_span.text == 'Generating...' or self.error_span.text == '404 Not Found':
+            return False
 
-        try:
-            self.req = urllib.request.Request(self.search_url, headers={'User-Agent': 'Mozilla/5.0'})
-            self.web_byte = urllib.request.urlopen(self.req).getcode()
-            
-            return self.web_byte
-
-        except urllib.error.HTTPError as error:
-            print(error)
+        else:
+            return True
             
     #* Creates the search URL that will be used to search for the web page of a specific series
     def createSearchURL(self, search_string):
 
         # TODO: Wrap this in a try catch to account for failed connections
+    
         
         self.search_string = search_string
         if ' ' in self.search_string:
             self.search_list = self.search_string.split()
             self.animix_search_token = '-'.join(self.search_list)
-            self.setGoGoToken(self.animix_search_token) #Storing this token for later use
+            self.setAnimixToken(self.animix_search_token) #Storing this token for later use
             self.search_url = f'https://animixplay.com/v1/{self.animix_search_token.lower()}'
             
             self.response = self.pingURL(self.search_url)
             
 
-            if self.response == 200:
-                print(self.search_url)
+            if self.response == True:
                 return self.search_url
             
             else:
-                self.search_url = f'https://animixplay.com/v1/{self.search_list[0]}'
+                self.second_word_clean = ''
+                self.second_word = self.search_list[1]
+                if self.second_word.endswith(':'):
+                    self.second_word = self.second_word.replace(':', '')
+                        
+                        
+                self.alt_search_token = self.search_list[0] + '-' + self.second_word + '-'
+                self.search_url = f'https://animixplay.com/v1/{self.alt_search_token}'
+                self.response = self.pingURL(self.search_url)
+                print(self.search_url)
 
-                if self.response == 200:
+                if self.response == True:
                     return self.search_url
             
 
@@ -83,14 +94,14 @@ class Model(QtWidgets.QMainWindow):
             self.search_url = f'https://animixplay.com/v1/{self.search_string.lower()}'
             self.response = self.pingURL(self.search_url)
 
-            if self.response == 200:
+            if self.response == True:
                 return self.search_url
             
             else:
                 self.search_url = f'https://animixplay.com/v4/4-{self.search_string.lower()}'
                 self.response = self.pingURL(self.search_url)
 
-                if self.response == 200:
+                if self.response == True:
                     return self.search_url
     
     #* This function will be used to grab the latest episode from the streaming site's webpage
@@ -100,7 +111,7 @@ class Model(QtWidgets.QMainWindow):
         # TODO: Add a try catch block to account for animixplay responding with a 404 error
         
         
-        self.animix_token = self.getGoGoToken()
+        self.animix_token = self.getAnimixToken()
         self.animix_url = f'https://animixplay.com/v1/{self.animix_token}'
         self.request = requests.get(self.animix_url)
         self.source = self.request.content
@@ -193,8 +204,6 @@ class Model(QtWidgets.QMainWindow):
             self.setEpisodeCount(self.titles_episode_count)
              
 
-            
-
     def randEpisode(self, search_field):
 
         self.search_field = search_field
@@ -215,7 +224,6 @@ class Model(QtWidgets.QMainWindow):
             self.episode_count = self.getLatestEpisode()
             self.episode_number = random.randint(1, int(self.episode_count))
             self.episode_url = self.url + '/ep' + str(self.episode_number)
-            print(self.episode_url)
             webbrowser.open(self.episode_url)
             
         else:
@@ -653,7 +661,7 @@ class Model(QtWidgets.QMainWindow):
     def setYoutubeToken(self, youtube_token):
         self.youtube_token = youtube_token
         
-    def setGoGoToken(self, gogo_token):
+    def setAnimixToken(self, gogo_token):
         self.gogo_token = gogo_token
     
     ###########* Functions to retrieve the search tokens *###########
@@ -666,7 +674,7 @@ class Model(QtWidgets.QMainWindow):
     def getYoutubeToken(self):
         return self.youtube_token
     
-    def getGoGoToken(self):
+    def getAnimixToken(self):
         return self.gogo_token
 
     #* Function to get the dictionary filled with titles and episodes that  are going to be used for the episode count
@@ -675,9 +683,11 @@ class Model(QtWidgets.QMainWindow):
 
     ###########* Functions to search the Internet for data on the target title *###########
     def redditSearch(self, reddit_token):
+
         self.reddit_token = reddit_token
 
         self.reddit_link = f'https://www.reddit.com/r/anime/search/?q={self.reddit_token}&restrict_sr=1'
+
         try:
             webbrowser.open_new_tab(self.reddit_link)
 
@@ -685,9 +695,11 @@ class Model(QtWidgets.QMainWindow):
             print(f'Could not connect to destination: {self.search_link}' )
 
     def wikiSearch(self, wiki_token):
+
         self.wiki_token = wiki_token
         
         self.wiki_link = f'https://en.wikipedia.org/wiki/{self.wiki_token}'
+
         try:
             webbrowser.open_new_tab(self.wiki_link)
         except ConnectionError:
@@ -695,9 +707,11 @@ class Model(QtWidgets.QMainWindow):
 
     def youTubeSearch(self, youtube_token):
 
+
         self.youtube_token
 
         self.youtube_link = f'https://www.youtube.com/results?search_query={self.youtube_token}'
+
         try:
             webbrowser.open_new_tab(self.youtube_link)
 
@@ -705,7 +719,7 @@ class Model(QtWidgets.QMainWindow):
             print(f'Could not connect to destination: {self.youtube_link}' )
         
 
-##################*This is the Main UI through which all functions that will act upon our main Window *##################
+##################* This is the Main UI through which all functions that will act upon our main Window *##################
 class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self):
@@ -719,6 +733,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.model = Model()
 
+        #Menu bar bitcoin donation
+        self.bitcoin_action = self.findChild(QtWidgets.QAction, 'actionBitcoin')
+        self.bitcoin_action.triggered.connect(self.donateBitcoinWindow)
+
+        #Menu bar paypal donation
+        self.paypal_action = self.findChild(QtWidgets.QAction, 'actionPaypal')
+        self.paypal_action.triggered.connect(self.donatePaypal)
+        
         self.search_field = self.findChild(QtWidgets.QLineEdit, 'search_field')
         self.top_button = self.findChild(QtWidgets.QPushButton, 'topUpcoming_button')
         self.discover_button = self.findChild(QtWidgets.QPushButton, 'discover_button')
@@ -766,7 +788,15 @@ class MainWindow(QtWidgets.QMainWindow):
     def randomMenu(self):
         self.hide() #Hide the main window
         self.rand_window = RandomWindow()
-
+        
+    #* Bitcoin Dialogue
+    def donateBitcoinWindow(self):
+        self.donate_dialogue = DonateDialogue()
+        
+    #* Open Paypal link
+    def donatePaypal(self):
+        webbrowser.open('https://paypal.me/McLaughlin007')
+        
 ###########* This is the Top UI through which all functions pertaining to the Discover Window will be created *##################
 class DiscoverWindow(QtWidgets.QMainWindow):
 
@@ -970,7 +1000,7 @@ class TopWindow(QtWidgets.QMainWindow):
         self.model.setWikiToken(self.wikiToken)
         self.model.setYoutubeToken(self.youToken)
 
-########### This is the Random UI through which all functions pertaining to the Random Window will be created ##################
+###########* This is the Random UI through which all functions pertaining to the Random Window will be created *##################
 class RandomWindow(QtWidgets.QMainWindow):
     
 
@@ -1047,6 +1077,22 @@ class RandomWindow(QtWidgets.QMainWindow):
 
         self.hide()
         main_win2 = MainWindow()
+        
+
+###########* This is the BTC Donation Dialogue UI  *##################
+class DonateDialogue(QtWidgets.QDialog):
+    
+    def __init__(self):
+        
+        self.model = Model()
+        self.model.home_path()
+
+        super(DonateDialogue, self).__init__()
+
+        #Load the btc ui file
+        uic.loadUi('btc.ui', self)
+        self.show()
+                
         
 def run():
     app = QtWidgets.QApplication(sys.argv) # Creates an instance of our application
