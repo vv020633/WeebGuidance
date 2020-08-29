@@ -372,7 +372,7 @@
     <property name="title">
      <string>View</string>
     </property>
-    <addaction name="actionAdd_to_collection"/>
+    <addaction name="actionCollection"/>
     <addaction name="actionStatus"/>
    </widget>
    <widget class="QMenu" name="menuDonate">
@@ -397,7 +397,7 @@
     <string>Check API Connectivity</string>
    </property>
   </action>
-  <action name="actionAdd_to_collection">
+  <action name="actionCollection">
    <property name="text">
     <string>Collection</string>
    </property>

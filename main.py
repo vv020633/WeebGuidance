@@ -1,13 +1,27 @@
-
-
-import sys, os, time, datetime, pprint, webbrowser, concurrent.futures, random, threading, tempfile, atexit, requests, bs4, re
+import atexit
+import bs4
+import concurrent.futures 
+import datetime
+import os 
+import pprint
+import pymongo
+import random 
+import requests
+import re
+import sys
+import sqlite3
+import time 
+import tempfile 
+import threading 
 import urllib.request
+import webbrowser
+
+from bs4 import BeautifulSoup
+from jikanpy import Jikan
 from PyQt5 import QtCore, QtWidgets, uic
 from PyQt5.QtWidgets import QAction, QCompleter
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtCore import Qt
-from jikanpy import Jikan
-from bs4 import BeautifulSoup
 
 
 
@@ -36,6 +50,110 @@ class Model(QtWidgets.QMainWindow):
 
     def __init__(self):
         super(Model, self).__init__()
+    
+    ###########* MongoDB functions *###########
+    
+    #* Establish connection with SQLITE DB
+    def dbConnect(self):
+        
+        self.db_path = dname + '/db'
+        
+        if not os.path.exists(self.db_path):  
+            os.makedirs(self.db_path)
+            
+        os.chdir(self.db_path)
+        
+        try:
+            self.connection = sqlite3.connect('weebguidance.db')
+            self.cursor = self.connection.cursor()
+            return self.connection
+            # self.cursor.execute("SELECT * FROM ")
+            
+        except ConnectionError as error:
+            print(error)
+        
+        
+    
+    def createTable(self, connection):
+        
+        self.connection = connection
+        self.cursor = self.connection.cursor()
+        
+        if self.connection is not None:
+            self.cursor.execute(''' CREATE TABLE IF NOT EXISTS completed (
+                                        title_id integer PRIMARY KEY,
+                                        title text NOT NULL
+                                    ); ''')
+            print('table created')
+            self.connection.commit()
+            
+        
+        else:
+            print('Error, cannot create the db connection')
+        
+        
+        
+    #* Adds series to the SQLite Database
+    def addSeries(self, search_bar):
+        
+        
+        self.id = 1
+        self.row_id_count = []
+        self.row_title_count = []
+        self.search_bar = search_bar
+        self.title = self.search_bar.text()
+
+        try:
+            #Form a connection to the DB
+            self.connection = sqlite3.connect('weebguidance.db')
+            self.cursor = self.connection.cursor()
+
+            #If there's a response from the connection then proceed
+            if self.cursor is not None:
+                #Try to enter the default index + value. If the index or title already exists then this should catch it
+                try:
+                    self.cursor.execute("INSERT INTO completed VALUES (?,?)", (self.id, self.title))
+                    self.connection.commit()
+                    
+                except sqlite3.IntegrityError as error:
+                    
+                    for self.row in self.cursor.execute("SELECT * FROM completed"):
+                        print(self.row)
+                        self.row_title_count.append(self.row[1])
+                    
+                    if self.title in self.row_title_count:
+                            print('duplicate entry detected')
+                    else:
+                        for self.row in self.cursor.execute("SELECT * FROM completed"):
+                            self.row_id_count.append(self.row[0])
+                    
+                        self.max_title_id = self.row_id_count[-1]
+                        self.id += self.max_title_id
+        
+                        self.cursor.execute("INSERT INTO completed VALUES (?,?)", (self.id, self.title))
+                        self.connection.commit()
+        except:        
+            print(error)
+                
+        
+        
+        
+        
+        # self.db, self.collection = self.dbConnect()
+        
+        # if len(self.search_bar.text()) > 3:
+            
+        #     if self.collection.find_one({'title': self.title}) != None:
+        #         print('You have already added this item to your collection')
+            
+        #     else:
+        #         self.series = {'title': self.title}
+        #         self.db_addition = self.collection.insert_one(self.series)
+        #         print('Inserting value: ' + str(self.db_addition))
+            
+            
+            
+    ###########################################*
     
     #* Makes a request to the webpage and returns a request code. This will be used to test the vailidity of URLs 
     #Animixplay returns a page with an html error embedded in the html, so this method works better than pinging the webpage
@@ -188,7 +306,7 @@ class Model(QtWidgets.QMainWindow):
         os.chdir(self.dname)
 
     #* Retrieves values for the main menu's predictive text search bar
-    def apiToMainMenu(self, search_field, start_time):
+    def apiToSearchBar(self, search_field, start_time):
         
 
         self.search_field = search_field
@@ -198,15 +316,8 @@ class Model(QtWidgets.QMainWindow):
         self.time_loop = True
         
         self.end_time = datetime.datetime.now()
-
-        while self.time_loop:
             
-            self.total_time = self.end_time - self.start_time
-            if self.total_time.seconds >= 4:
-
-                self.time_loop = False
-            else:
-                continue
+        self.total_time = self.end_time - self.start_time
 
             
         #If the length of the text field is divisible by 3 or odd numbers over 3 then the values are retreived from the API. This is done to limit the number of inputs sent to the API by the user, which could results in an error
@@ -776,9 +887,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.paypal_action = self.findChild(QtWidgets.QAction, 'actionPaypal')
         self.paypal_action.triggered.connect(self.donatePaypal)
         
-        #Menu bar status option
+        #Menu bar status option for API connectivity
         self.connect_status = self.findChild(QtWidgets.QAction, 'actionStatus')
         self.connect_status.triggered.connect(self.status)
+        
+        #Menu bar option for mongodb collection
+        self.collection_action = self.findChild(QtWidgets.QAction, 'actionCollection')
+        self.collection_action.triggered.connect(self.collection)
         
         self.search_field = self.findChild(QtWidgets.QLineEdit, 'search_field')
         self.top_button = self.findChild(QtWidgets.QPushButton, 'topUpcoming_button')
@@ -790,7 +905,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.rand_button.clicked.connect(self.randomMenu)
         
         self.start_time = datetime.datetime.now()
-        self.search_field.textChanged.connect(lambda: self.model.apiToMainMenu(self.search_field, self.start_time))
+        self.search_field.textChanged.connect(lambda: self.model.apiToSearchBar(self.search_field, self.start_time))
 
         self.titles, self.ranks, self.start_dates, self.url = self.model.apiToTopWindow()
 
@@ -835,9 +950,14 @@ class MainWindow(QtWidgets.QMainWindow):
     #* Open Paypal link
     def donatePaypal(self):
         webbrowser.open('https://paypal.me/McLaughlin007')
-        
+    
+    #* Open Status Dialogue
     def status(self):
         self.connection_dialogue = ConnectionDialogue()
+        
+    #* Open Status Dialogue
+    def collection(self):
+        self.collection_window = CollectionWindow()
         
 ###########* This is the Top UI through which all functions pertaining to the Discover Window will be created *##################
 class DiscoverWindow(QtWidgets.QMainWindow):
@@ -1120,7 +1240,41 @@ class RandomWindow(QtWidgets.QMainWindow):
         self.hide()
         main_win2 = MainWindow()
         
+        
+###########* This is the Collection Dialogue UI  *##################
+class CollectionWindow(QtWidgets.QMainWindow):
+    
+    def __init__(self):
+        
+        self.model = Model()
+        self.model.home_path()
 
+        super(CollectionWindow, self).__init__()
+
+        #Load the connection ui file
+        uic.loadUi('collection.ui', self)
+        
+        self.connection = self.model.dbConnect()
+        self.model.createTable(self.connection)
+        
+        self.search_field = self.findChild(QtWidgets.QLineEdit, 'search_field')
+        
+        self.add_button = self.findChild(QtWidgets.QPushButton, 'add_button')
+        self.add_button.clicked.connect(lambda: self.model.addSeries(self.search_field))
+        
+        self.remove_button = self.findChild(QtWidgets.QPushButton, 'remove_button')
+        
+        self.rand_button = self.findChild(QtWidgets.QPushButton, 'rand_button')
+        
+        self.collection_list = self.findChild(QtWidgets.QTextBrowser, 'collection_list')
+        
+        self.start_time = datetime.datetime.now()
+        self.search_field.textChanged.connect(lambda: self.model.apiToSearchBar(self.search_field, self.start_time))
+        
+        
+        self.show()
+        
+        
 ###########* This is the BTC Donation Dialogue UI  *##################
 class DonateDialogue(QtWidgets.QDialog):
     
@@ -1152,6 +1306,8 @@ class ConnectionDialogue(QtWidgets.QDialog):
         self.text_edit = self.findChild(QtWidgets.QTextEdit, 'textEdit')
         self.model.apiStatus(self.text_edit)
         self.show()
+        
+
         
                 
         
