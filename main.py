@@ -56,6 +56,18 @@ class Model(QtWidgets.QMainWindow):
     #* Establish connection with SQLITE DB
     def dbConnect(self):
         
+        self.dbPath()
+        
+        try:
+            self.connection = sqlite3.connect('weebguidance.db')
+            self.cursor = self.connection.cursor()
+            return self.connection
+            
+        except ConnectionError as error:
+            print(error)
+        
+        
+    def dbPath(self):
         self.db_path = dname + '/db'
         
         if not os.path.exists(self.db_path):  
@@ -63,20 +75,12 @@ class Model(QtWidgets.QMainWindow):
             
         os.chdir(self.db_path)
         
-        try:
-            self.connection = sqlite3.connect('weebguidance.db')
-            self.cursor = self.connection.cursor()
-            return self.connection
-            # self.cursor.execute("SELECT * FROM ")
-            
-        except ConnectionError as error:
-            print(error)
         
-        
-    
-    def createTable(self, connection):
+    def createTable(self, connection, collection_list):
         
         self.connection = connection
+        self.collection_list = collection_list
+        
         self.cursor = self.connection.cursor()
         
         if self.connection is not None:
@@ -87,6 +91,8 @@ class Model(QtWidgets.QMainWindow):
             print('table created')
             self.connection.commit()
             
+            self.displayCollection(self.cursor, self.collection_list)
+           
         
         else:
             print('Error, cannot create the db connection')
@@ -94,8 +100,9 @@ class Model(QtWidgets.QMainWindow):
         
         
     #* Adds series to the SQLite Database
-    def addSeries(self, search_bar):
+    def addSeries(self, search_bar, collection_list):
         
+        self.dbPath()
         
         self.id = 1
         self.row_id_count = []
@@ -117,39 +124,48 @@ class Model(QtWidgets.QMainWindow):
                     
                 except sqlite3.IntegrityError as error:
                     
+                    #Fill list with returned title ids
                     for self.row in self.cursor.execute("SELECT * FROM completed"):
-                        print(self.row)
                         self.row_title_count.append(self.row[1])
                     
                     if self.title in self.row_title_count:
                             print('duplicate entry detected')
                     else:
+                        #Fill list with returned title strings
                         for self.row in self.cursor.execute("SELECT * FROM completed"):
                             self.row_id_count.append(self.row[0])
-                    
+                            
+                        #Find the largest title id in the database and add 1 to it
                         self.max_title_id = self.row_id_count[-1]
                         self.id += self.max_title_id
         
                         self.cursor.execute("INSERT INTO completed VALUES (?,?)", (self.id, self.title))
                         self.connection.commit()
+                        self.displayCollection(self.cursor, self.collection_list)
+                        
         except:        
             print(error)
                 
+        finally:
+            self.connection.close()
+        
+    def displayCollection(self, cursor, collection_list ):
+        self.collection_list = collection_list
+        self.cursor = cursor
+        
+        self.collection_list.clear()
         
         
+        try:
         
-        
-        # self.db, self.collection = self.dbConnect()
-        
-        # if len(self.search_bar.text()) > 3:
+            for self.row in self.cursor.execute("SELECT * FROM completed"):
+                self.collection_list.insertItem(self.row[0], self.row[1])
             
-        #     if self.collection.find_one({'title': self.title}) != None:
-        #         print('You have already added this item to your collection')
-            
-        #     else:
-        #         self.series = {'title': self.title}
-        #         self.db_addition = self.collection.insert_one(self.series)
-        #         print('Inserting value: ' + str(self.db_addition))
+            self.collection_list.sortItems()
+    
+        except TypeError as error:
+            print(error)
+        
             
             
             
@@ -1254,19 +1270,21 @@ class CollectionWindow(QtWidgets.QMainWindow):
         #Load the connection ui file
         uic.loadUi('collection.ui', self)
         
-        self.connection = self.model.dbConnect()
-        self.model.createTable(self.connection)
-        
         self.search_field = self.findChild(QtWidgets.QLineEdit, 'search_field')
+        self.collection_list = self.findChild(QtWidgets.QListWidget, 'collection_list')
+        
+        self.connection = self.model.dbConnect()
+        self.model.createTable(self.connection, self.collection_list)
+        
+        
         
         self.add_button = self.findChild(QtWidgets.QPushButton, 'add_button')
-        self.add_button.clicked.connect(lambda: self.model.addSeries(self.search_field))
+        self.add_button.clicked.connect(lambda: self.model.addSeries(self.search_field, self.collection_list))
         
         self.remove_button = self.findChild(QtWidgets.QPushButton, 'remove_button')
         
         self.rand_button = self.findChild(QtWidgets.QPushButton, 'rand_button')
         
-        self.collection_list = self.findChild(QtWidgets.QTextBrowser, 'collection_list')
         
         self.start_time = datetime.datetime.now()
         self.search_field.textChanged.connect(lambda: self.model.apiToSearchBar(self.search_field, self.start_time))

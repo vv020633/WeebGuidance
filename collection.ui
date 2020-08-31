@@ -6,14 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>450</width>
-    <height>500</height>
+    <width>430</width>
+    <height>480</height>
    </rect>
   </property>
   <property name="maximumSize">
    <size>
-    <width>450</width>
-    <height>500</height>
+    <width>430</width>
+    <height>480</height>
    </size>
   </property>
   <property name="palette">
@@ -87,7 +87,7 @@
    <double>0.975000000000000</double>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QWidget" name="">
+   <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
       <x>40</x>
@@ -146,7 +146,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>450</width>
+     <width>430</width>
      <height>22</height>
     </rect>
    </property>
