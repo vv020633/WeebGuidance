@@ -51,7 +51,7 @@ class Model(QtWidgets.QMainWindow):
     def __init__(self):
         super(Model, self).__init__()
     
-    ###########* MongoDB functions *###########
+    ###########* SQLITE DB functions *###########
     
     #* Establish connection with SQLITE DB
     def dbConnect(self):
@@ -66,7 +66,7 @@ class Model(QtWidgets.QMainWindow):
         except ConnectionError as error:
             print(error)
         
-        
+    #* DB directory    
     def dbPath(self):
         self.db_path = dname + '/db'
         
@@ -75,7 +75,7 @@ class Model(QtWidgets.QMainWindow):
             
         os.chdir(self.db_path)
         
-        
+    #*Create a DB table for the completed series    
     def createTable(self, connection, collection_list):
         
         self.connection = connection
@@ -83,7 +83,7 @@ class Model(QtWidgets.QMainWindow):
         
         self.cursor = self.connection.cursor()
         
-        if self.connection is not None:
+        try:
             self.cursor.execute(''' CREATE TABLE IF NOT EXISTS completed (
                                         title_id integer PRIMARY KEY,
                                         title text NOT NULL
@@ -92,10 +92,10 @@ class Model(QtWidgets.QMainWindow):
             self.connection.commit()
             
             self.displayCollection(self.cursor, self.collection_list)
-           
-        
-        else:
-            print('Error, cannot create the db connection')
+            
+        except TypeError as error:
+            print(error)
+            print('Cannot form DB connection')
         
         
         
@@ -148,7 +148,55 @@ class Model(QtWidgets.QMainWindow):
                 
         finally:
             self.connection.close()
+            
+     #*Remove the series selected from the QList and the database       
+    def removeSeries(self, search_field, collection_list):
         
+        self.search_field = search_field
+        self.search_value = search_field.text()
+        self.collection_list = collection_list
+        self.collection_list = self.collection_list
+        self.items = []
+        
+        if search_field.text() is None:
+            print('Please Enter text value')
+            
+        else:
+            try:
+                #Form a connection to the DB
+                self.connection = sqlite3.connect('weebguidance.db')
+                self.cursor = self.connection.cursor()
+                self.cursor.execute("DELETE FROM completed WHERE title=?", (self.search_value,))
+                self.connection.commit()
+                self.displayCollection(self.cursor, self.collection_list)
+
+
+
+            except ConnectionError as error:
+                print(error)
+            
+            finally:
+                self.connection.close()
+         
+                #########################################################################* 
+                  
+    #* Update the collection menu search field based on the user's selection on the Qlist
+    def updateField(self, search_field, collection_list):
+        self.dbPath()
+            
+        self.search_field = search_field
+        self.collection_list = collection_list
+        
+        
+        self.selected_list = self.collection_list.selectedItems()
+        self.title = self.selected_list[0].text()
+        self.list_row = self.collection_list.row(self.selected_list[0])
+        
+        self.search_field.setText(self.title)
+        
+
+            
+    #* Displays the results of the completed table on the list widget           
     def displayCollection(self, cursor, collection_list ):
         self.collection_list = collection_list
         self.cursor = cursor
@@ -166,10 +214,6 @@ class Model(QtWidgets.QMainWindow):
         except TypeError as error:
             print(error)
         
-            
-            
-            
-    ###########################################*
     
     #* Makes a request to the webpage and returns a request code. This will be used to test the vailidity of URLs 
     #Animixplay returns a page with an html error embedded in the html, so this method works better than pinging the webpage
@@ -312,7 +356,6 @@ class Model(QtWidgets.QMainWindow):
                             self.eptotal_loop = False
                             self.total_found = True
                             return int(self.total_episodes)
-                            
 
 
     def home_path(self):
@@ -339,7 +382,7 @@ class Model(QtWidgets.QMainWindow):
         #If the length of the text field is divisible by 3 or odd numbers over 3 then the values are retreived from the API. This is done to limit the number of inputs sent to the API by the user, which could results in an error
         if len(self.search_field.text()) >= 3 and self.total_time.seconds % 4 == 0:
 
-            self.titles=[]
+            self.titles = []
 
             self.titles_episode_count = {}
             #Search parameter is set to retrieve anime only
@@ -370,11 +413,16 @@ class Model(QtWidgets.QMainWindow):
 
         self.search_field = search_field
 
+        
         #Create url based on the text field
         self.url = self.createSearchURL(self.search_field.text())
+        
+        
         #Get episode count if it exists
         self.episode_count_dict = self.getEpisodeCount()
+            
 
+           
         #get the episode count of the anime that the user has chosen
         self.episode_count =  self.episode_count_dict[self.search_field.text()]
 
@@ -393,6 +441,55 @@ class Model(QtWidgets.QMainWindow):
             self.episode_number = random.randint(1, int(self.episode_count))
             self.episode_url = self.url + '/ep' + str(self.episode_number)
             webbrowser.open(self.episode_url)
+    # TODO: Rename these two functions to have more suitable names. Build 3rd function to handle randomisation
+    def randEpCollection(self, search_field):
+        self.search_field = search_field
+        
+        #Create url based on the text field
+        self.url = self.createSearchURL(self.search_field.text())
+        
+        self.titles = []
+
+        self.titles_episode_count = {}
+        #Search parameter is set to retrieve anime only
+        self.jikan_search = jikan.search('anime', search_field.text(), page=1)
+        
+        #Filter the results to retrieve TV titles only 
+        self.results = self.jikan_search['results']
+        for self.result in self.results: 
+            if self.result['type'] == 'TV':
+                self.titles.append(self.result['title'])
+                try:
+                    self.titles_episode_count[self.result['title']] = self.result['episodes']
+                except ValueError:
+                    self.titles_episode_count[self.result['title']] = 'None'
+                    
+        self.setEpisodeCount(self.titles_episode_count)  
+        
+        #Get episode count if it exists
+        self.episode_count_dict = self.getEpisodeCount()
+            
+
+           
+        #get the episode count of the anime that the user has chosen
+        self.episode_count =  self.episode_count_dict[self.search_field.text()]
+
+        #If the series is ongoing it will have an episode count of none, in which case the
+        #Episode count will be gathered from the html in the webpage   
+        try:
+            self.episode_number = random.randint(1, int(self.episode_count))
+            self.episode_url = self.url + '/ep' + str(self.episode_number)
+            webbrowser.open(self.episode_url)          
+        
+        #Catch case for none type
+        except TypeError as error:
+            print(error)
+            self.episode_count = self.getLatestEpisode()
+            self.episode_number = random.randint(1, int(self.episode_count))
+            self.episode_url = self.url + '/ep' + str(self.episode_number)
+            webbrowser.open(self.episode_url)
+            
+        
         
         
     #* Function to select a random year to find films and titles for
@@ -842,7 +939,7 @@ class Model(QtWidgets.QMainWindow):
     #* Function to get the dictionary filled with titles and episodes that  are going to be used for the episode count
     def getEpisodeCount(self):
         return self.episode_dictionary
-
+        
     ###########* Functions to search the Internet for data on the target title *###########
     def redditSearch(self, reddit_token):
 
@@ -1271,19 +1368,22 @@ class CollectionWindow(QtWidgets.QMainWindow):
         uic.loadUi('collection.ui', self)
         
         self.search_field = self.findChild(QtWidgets.QLineEdit, 'search_field')
-        self.collection_list = self.findChild(QtWidgets.QListWidget, 'collection_list')
-        
+
         self.connection = self.model.dbConnect()
         self.model.createTable(self.connection, self.collection_list)
         
+        self.collection_list = self.findChild(QtWidgets.QListWidget, 'collection_list')
+        self.collection_list.itemClicked.connect(lambda: self.model.updateField(self.search_field, self.collection_list))
         
         
         self.add_button = self.findChild(QtWidgets.QPushButton, 'add_button')
         self.add_button.clicked.connect(lambda: self.model.addSeries(self.search_field, self.collection_list))
         
         self.remove_button = self.findChild(QtWidgets.QPushButton, 'remove_button')
+        self.remove_button.clicked.connect(lambda: self.model.removeSeries(self.search_field, self.collection_list))
         
         self.rand_button = self.findChild(QtWidgets.QPushButton, 'rand_button')
+        self.rand_button.clicked.connect(lambda: self.model.randEpCollection(self.search_field))
         
         
         self.start_time = datetime.datetime.now()
@@ -1291,6 +1391,7 @@ class CollectionWindow(QtWidgets.QMainWindow):
         
         
         self.show()
+        
         
         
 ###########* This is the BTC Donation Dialogue UI  *##################
