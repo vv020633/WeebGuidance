@@ -4,7 +4,6 @@ import concurrent.futures
 import datetime
 import os 
 import pprint
-import pymongo
 import random 
 import requests
 import re
@@ -287,24 +286,47 @@ class Model(QtWidgets.QMainWindow):
                 return self.search_url
             
             else:
-                self.second_word_clean = ''
+    
                 self.second_word = self.search_list[1]
                 if self.second_word.endswith(':'):
-                    self.second_word = self.second_word.replace(':', '')
+                    self.second_word = self.second_word.replace(':', '') # TODO: double-check this is actually working
                         
                         
-                self.alt_search_token = self.search_list[0] + '-' + self.second_word + '-'
-                self.search_url = f'https://animixplay.com/v1/{self.alt_search_token}'
+                self.animix_search_token = self.search_list[0] + '-' + self.second_word + '-'
+                self.search_url = f'https://animixplay.com/v1/{self.animix_search_token}'
                 self.response = self.pingURL(self.search_url)
-                print(self.search_url)
-
+                self.setAnimixToken(self.animix_search_token)
+                
                 if self.response == True:
                     return self.search_url
-            
+                
+                else:
+                    self.search_list = search_string.split()
+                    self.count = 0
+                    for self.word in self.search_list:
+                        if ':' in self.word:
+                            self.new_word = self.word.replace(':', '')
+                            self.search_list[self.count] = self.new_word
+                        else:
+                            self.count += 1
+                    self.animix_search_token = '-'.join(self.search_list)
+                    self.setAnimixToken(self.animix_search_token)
+                    self.search_url = f'https://animixplay.com/v1/{self.animix_search_token.lower()}'
+                    self.response = self.pingURL(self.search_url)
 
+                    if self.response == True:
+                        return self.search_url
+                        
+                    else:
+                        self.search_url = f'https://animixplay.com/v4/4-{self.animix_search_token.lower()}'
+                        self.response = self.pingURL(self.search_url)
+                        
+                        if self.response == True:
+                            return self.search_url
         
         else:
             self.search_url = f'https://animixplay.com/v1/{self.search_string.lower()}'
+            self.setAnimixToken(self.search_string.lower())
             self.response = self.pingURL(self.search_url)
 
             if self.response == True:
@@ -312,10 +334,20 @@ class Model(QtWidgets.QMainWindow):
             
             else:
                 self.search_url = f'https://animixplay.com/v4/4-{self.search_string.lower()}'
+                self.setAnimixToken(self.search_string.lower())
                 self.response = self.pingURL(self.search_url)
-
+                print(self.search_url)
                 if self.response == True:
                     return self.search_url
+            
+                else:
+                    self.search_string = re.sub('[^A-Za-z0-9]+', '', self.search_string)
+                    self.search_url = f'https://animixplay.com/v1/{self.search_string.lower()}'
+                    self.setAnimixToken(self.search_string.lower())
+                    self.response = self.pingURL(self.search_url)
+
+                    if self.response == True:
+                        return self.search_url
     
     #* This function will be used to grab the latest episode from the streaming site's webpage
     #This is to account for series which are 'ongoing' and thus will not return an episode count from the API
@@ -920,8 +952,8 @@ class Model(QtWidgets.QMainWindow):
     def setYoutubeToken(self, youtube_token):
         self.youtube_token = youtube_token
         
-    def setAnimixToken(self, gogo_token):
-        self.gogo_token = gogo_token
+    def setAnimixToken(self, animix_token):
+        self.animix_token= animix_token
     
     ###########* Functions to retrieve the search tokens *###########
     def getRedditToken(self):
@@ -934,7 +966,7 @@ class Model(QtWidgets.QMainWindow):
         return self.youtube_token
     
     def getAnimixToken(self):
-        return self.gogo_token
+        return self.animix_token
 
     #* Function to get the dictionary filled with titles and episodes that  are going to be used for the episode count
     def getEpisodeCount(self):
