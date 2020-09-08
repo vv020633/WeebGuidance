@@ -273,6 +273,7 @@ class Model(QtWidgets.QMainWindow):
     
         
         self.search_string = search_string
+        #If the search string has any blank spaces separating the words then it will trigger this set of if else statements to match animixplay's search strings
         if ' ' in self.search_string:
             self.search_list = self.search_string.split()  
             self.animix_search_token = '-'.join(self.search_list)
@@ -284,45 +285,58 @@ class Model(QtWidgets.QMainWindow):
 
             if self.response == True:
                 return self.search_url
-            
             else:
-    
-                self.second_word = self.search_list[1]
-                if self.second_word.endswith(':'):
-                    self.second_word = self.second_word.replace(':', '') # TODO: double-check this is actually working
-                        
-                        
-                self.animix_search_token = self.search_list[0] + '-' + self.second_word + '-'
-                self.search_url = f'https://animixplay.com/v1/{self.animix_search_token}'
+                for self.string in self.search_list:
+                    self.new_string = ''.join(self.character for self.character in self.string if self.character.isalnum())
+                self.animix_search_token = '-'.join(self.search_list) 
+                self.setAnimixToken(self.animix_search_token) #Storing this token for later use
+                self.search_url = f'https://animixplay.com/v1/{self.animix_search_token.lower()}'
+            
                 self.response = self.pingURL(self.search_url)
-                self.setAnimixToken(self.animix_search_token)
-                
+            
+
                 if self.response == True:
-                    return self.search_url
-                
+                    return self.search_url 
                 else:
-                    self.search_list = search_string.split()
-                    self.count = 0
-                    for self.word in self.search_list:
-                        if ':' in self.word:
-                            self.new_word = self.word.replace(':', '')
-                            self.search_list[self.count] = self.new_word
-                        else:
-                            self.count += 1
-                    self.animix_search_token = '-'.join(self.search_list)
-                    self.setAnimixToken(self.animix_search_token)
-                    self.search_url = f'https://animixplay.com/v1/{self.animix_search_token.lower()}'
+
+                    #Removes the colon fromt the second word. This is a pretty specific replacement
+                    self.second_word = self.search_list[1]
+                    if ':' in self.second_word:
+                        self.second_word = self.second_word.replace(':', '') # TODO: double-check this is actually working
+
+
+                    self.animix_search_token = self.search_list[0] + '-' + self.second_word + '-'
+                    self.search_url = f'https://animixplay.com/v1/{self.animix_search_token}'
                     self.response = self.pingURL(self.search_url)
+                    self.setAnimixToken(self.animix_search_token)
 
                     if self.response == True:
                         return self.search_url
-                        
+
                     else:
-                        self.search_url = f'https://animixplay.com/v4/4-{self.animix_search_token.lower()}'
+                        self.search_list = search_string.split()
+                        self.count = 0
+                        for self.word in self.search_list:
+                            if ':' in self.word:
+                                self.new_word = self.word.replace(':', '')
+                                self.search_list[self.count] = self.new_word
+                            else:
+                                self.count += 1
+                        self.animix_search_token = '-'.join(self.search_list)
+                        self.setAnimixToken(self.animix_search_token)
+                        self.search_url = f'https://animixplay.com/v1/{self.animix_search_token.lower()}'
                         self.response = self.pingURL(self.search_url)
-                        
+
                         if self.response == True:
                             return self.search_url
+
+                        else:
+                            self.search_url = f'https://animixplay.com/v4/4-{self.animix_search_token.lower()}'
+                            self.setAnimixToken(self.search_string.lower())
+                            self.response = self.pingURL(self.search_url)
+
+                            if self.response == True:
+                                return self.search_url
         
         else:
             self.search_url = f'https://animixplay.com/v1/{self.search_string.lower()}'
@@ -493,18 +507,38 @@ class Model(QtWidgets.QMainWindow):
                 self.titles.append(self.result['title'])
                 try:
                     self.titles_episode_count[self.result['title']] = self.result['episodes']
+                    
                 except ValueError:
                     self.titles_episode_count[self.result['title']] = 'None'
+                except KeyError as error:
+                    print(error)
                     
-        self.setEpisodeCount(self.titles_episode_count)  
+        self.setEpisodeCount(self.titles_episode_count)           
         
         #Get episode count if it exists
-        self.episode_count_dict = self.getEpisodeCount()
+        try:
+            self.episode_count =  self.titles_episode_count[self.search_field.text()]
+        except:
+            self.episode_count = 'None'
             
+        if self.episode_count == 0 or self.episode_count == 'None':
+            
+            self.episode_count = self.getLatestEpisode()
+            self.episode_number = random.randint(1, int(self.episode_count))
+            self.episode_url = self.url + '/ep' + str(self.episode_number)
+            webbrowser.open(self.episode_url)
+            
+        else:
+            
+            self.episode_number = random.randint(1, int(self.episode_count))
+            self.episode_url = self.url + '/ep' + str(self.episode_number)
+            webbrowser.open(self.episode_url)
+           
+        
 
            
         #get the episode count of the anime that the user has chosen
-        self.episode_count =  self.episode_count_dict[self.search_field.text()]
+        # self.episode_count =  self.episode_count_dict[self.search_field.text()]
 
         #If the series is ongoing it will have an episode count of none, in which case the
         #Episode count will be gathered from the html in the webpage   
@@ -521,8 +555,6 @@ class Model(QtWidgets.QMainWindow):
             self.episode_url = self.url + '/ep' + str(self.episode_number)
             webbrowser.open(self.episode_url)
             
-        
-        
         
     #* Function to select a random year to find films and titles for
     def yearRandomize(self, current_year, radiobutton, text_browser, combobox):
@@ -864,9 +896,16 @@ class Model(QtWidgets.QMainWindow):
             #Grabbing the top upcoming anime from the MAL API
             self.top_anime = jikan.top(type='anime', page=1, subtype='upcoming')
         
-        except ConnectionError:
-            print('Could not connect to the MAL API at: https://api.jikan.moe/v3')
-            time.sleep(5)
+        except ConnectionError as error:
+            try:
+                connection_window = ConnectionDialogue()
+                connection_window.text_edit.setText(error)
+                print('Could not connect to the MAL API at: https://api.jikan.moe/v3')
+                
+            except:
+                # connection_window = ConnectionDialogue()
+                # connection_window.text_edit.setText(error)
+                print('Failed to connect to the MAL API at: https://api.jikan.moe/v3')
         
         self.titles = []
         self.ranks = []
