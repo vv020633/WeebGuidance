@@ -170,7 +170,6 @@ class Model(QtWidgets.QMainWindow):
                 self.displayCollection(self.cursor, self.collection_list)
 
 
-
             except ConnectionError as error:
                 print(error)
             
@@ -194,15 +193,13 @@ class Model(QtWidgets.QMainWindow):
         self.search_field.setText(self.title)
         
 
-            
     #* Displays the results of the completed table on the list widget           
     def displayCollection(self, cursor, collection_list ):
         self.collection_list = collection_list
         self.cursor = cursor
         
         self.collection_list.clear()
-        
-        
+                
         try:
         
             for self.row in self.cursor.execute("SELECT * FROM completed"):
@@ -271,7 +268,6 @@ class Model(QtWidgets.QMainWindow):
 
         # TODO: Wrap this in a try catch to account for failed connections
     
-        
         self.search_string = search_string
         #If the search string has any blank spaces separating the words then it will trigger this set of if else statements to match animixplay's search strings
         if ' ' in self.search_string:
@@ -285,13 +281,23 @@ class Model(QtWidgets.QMainWindow):
 
             if self.response == True:
                 return self.search_url
+            
             else:
+                #Remove any characters that aren't alphanumerical and join the string 
+                self.count = 0
+                
                 for self.string in self.search_list:
+                    #Join alphanumerics
                     self.new_string = ''.join(self.character for self.character in self.string if self.character.isalnum())
+                    #If a new string has been created, replace the original
+                    if self.new_string:
+                        self.search_list[self.count] = self.new_string
+                        
+                    self.count += 1
+                    
                 self.animix_search_token = '-'.join(self.search_list) 
                 self.setAnimixToken(self.animix_search_token) #Storing this token for later use
                 self.search_url = f'https://animixplay.com/v1/{self.animix_search_token.lower()}'
-            
                 self.response = self.pingURL(self.search_url)
             
 
@@ -299,7 +305,7 @@ class Model(QtWidgets.QMainWindow):
                     return self.search_url 
                 else:
 
-                    #Removes the colon fromt the second word. This is a pretty specific replacement
+                    #Removes the colon from the second word. This is a pretty specific replacement
                     self.second_word = self.search_list[1]
                     if ':' in self.second_word:
                         self.second_word = self.second_word.replace(':', '') # TODO: double-check this is actually working
@@ -312,7 +318,8 @@ class Model(QtWidgets.QMainWindow):
 
                     if self.response == True:
                         return self.search_url
-
+                    
+                    #Replace colons with blank space
                     else:
                         self.search_list = search_string.split()
                         self.count = 0
@@ -329,10 +336,10 @@ class Model(QtWidgets.QMainWindow):
 
                         if self.response == True:
                             return self.search_url
-
+                        
+                        #Try using the v4 link address as opposed to the v1 link address
                         else:
                             self.search_url = f'https://animixplay.com/v4/4-{self.animix_search_token.lower()}'
-                            self.setAnimixToken(self.search_string.lower())
                             self.response = self.pingURL(self.search_url)
 
                             if self.response == True:
@@ -350,7 +357,7 @@ class Model(QtWidgets.QMainWindow):
                 self.search_url = f'https://animixplay.com/v4/4-{self.search_string.lower()}'
                 self.setAnimixToken(self.search_string.lower())
                 self.response = self.pingURL(self.search_url)
-                print(self.search_url)
+                
                 if self.response == True:
                     return self.search_url
             
@@ -376,34 +383,34 @@ class Model(QtWidgets.QMainWindow):
         self.source = self.request.content
         self.soup = BeautifulSoup(self.source, 'html.parser')
         
+        #Div which holds the episode count
         self.epslist_div = self.soup.find('div', id = 'epslistplace')
         self.character_count = ''
         self.total_found = False
         self.eptotal_loop = True
         
-        while self.total_found is False:
-            
-            for self.character in range(0, len(self.epslist_div.text)):
-                self.character_count += self.epslist_div.text[self.character]
-
-                if 'eptotal' in self.character_count:
-                    
-                    
-                    self.total_episodes = ' '
-                    self.count = 3
-                    
-                    while self.eptotal_loop:
-
-                        self.total_episodes+= self.epslist_div.text[self.character + self.count]
-                        self.count+=1
-
-                        if self.epslist_div.text[self.character + self.count] == ',':
-                            
-                            self.eptotal_loop = False
-                            self.total_found = True
-                            return int(self.total_episodes)
-
-
+        #If the episode total is found in this div then grab it and return it
+        for self.character in range(0, len(self.epslist_div.text)):
+            self.character_count += self.epslist_div.text[self.character]
+            if 'eptotal' in self.character_count:
+                
+                
+                self.total_episodes = ' '
+                self.count = 3
+                
+                while self.eptotal_loop:
+                    self.total_episodes+= self.epslist_div.text[self.character + self.count]
+                    self.count+=1
+                    if self.epslist_div.text[self.character + self.count] == ',':
+                        
+                        self.eptotal_loop = False
+                        self.total_found = True
+                        return int(self.total_episodes)
+            else:
+                # TODO: FUNCTION THAT FINDS THE LATEST EPISODE USING ALTERNATIVE METHOD
+                return 5
+        
+    
     def home_path(self):
 
         self.abspath = os.path.abspath(__file__)
@@ -487,6 +494,7 @@ class Model(QtWidgets.QMainWindow):
             self.episode_number = random.randint(1, int(self.episode_count))
             self.episode_url = self.url + '/ep' + str(self.episode_number)
             webbrowser.open(self.episode_url)
+            
     # TODO: Rename these two functions to have more suitable names. Build 3rd function to handle randomisation
     def randEpCollection(self, search_field):
         self.search_field = search_field
@@ -530,27 +538,6 @@ class Model(QtWidgets.QMainWindow):
             
         else:
             
-            self.episode_number = random.randint(1, int(self.episode_count))
-            self.episode_url = self.url + '/ep' + str(self.episode_number)
-            webbrowser.open(self.episode_url)
-           
-        
-
-           
-        #get the episode count of the anime that the user has chosen
-        # self.episode_count =  self.episode_count_dict[self.search_field.text()]
-
-        #If the series is ongoing it will have an episode count of none, in which case the
-        #Episode count will be gathered from the html in the webpage   
-        try:
-            self.episode_number = random.randint(1, int(self.episode_count))
-            self.episode_url = self.url + '/ep' + str(self.episode_number)
-            webbrowser.open(self.episode_url)          
-        
-        #Catch case for none type
-        except TypeError as error:
-            print(error)
-            self.episode_count = self.getLatestEpisode()
             self.episode_number = random.randint(1, int(self.episode_count))
             self.episode_url = self.url + '/ep' + str(self.episode_number)
             webbrowser.open(self.episode_url)
@@ -1066,6 +1053,9 @@ class MainWindow(QtWidgets.QMainWindow):
         #Menu bar bitcoin donation
         self.bitcoin_action = self.findChild(QtWidgets.QAction, 'actionBitcoin')
         self.bitcoin_action.triggered.connect(self.donateBitcoinWindow)
+        
+        self.monero_action = self.findChild(QtWidgets.QAction, 'actionMonero')
+        self.monero_action.triggered.connect(self.donateMoneroWindow)
 
         #Menu bar paypal donation
         self.paypal_action = self.findChild(QtWidgets.QAction, 'actionPaypal')
@@ -1129,7 +1119,11 @@ class MainWindow(QtWidgets.QMainWindow):
         
     #* Bitcoin Dialogue
     def donateBitcoinWindow(self):
-        self.donate_dialogue = DonateDialogue()
+        self.donate_dialogue = BtcDonateDialogue()
+        
+     #* Monero Dialogue
+    def donateMoneroWindow(self):
+        self.donate_dialogue = XmrDonateDialogue()
         
     #* Open Paypal link
     def donatePaypal(self):
@@ -1466,17 +1460,31 @@ class CollectionWindow(QtWidgets.QMainWindow):
         
         
 ###########* This is the BTC Donation Dialogue UI  *##################
-class DonateDialogue(QtWidgets.QDialog):
+class BtcDonateDialogue(QtWidgets.QDialog):
     
     def __init__(self):
         
         self.model = Model()
         self.model.home_path()
 
-        super(DonateDialogue, self).__init__()
+        super(BtcDonateDialogue, self).__init__()
 
         #Load the btc ui file
         uic.loadUi('btc.ui', self)
+        self.show()
+        
+###########* This is the XMR Donation Dialogue UI  *##################
+class XmrDonateDialogue(QtWidgets.QDialog):
+    
+    def __init__(self):
+        
+        self.model = Model()
+        self.model.home_path()
+
+        super(XmrDonateDialogue, self).__init__()
+
+        #Load the btc ui file
+        uic.loadUi('xmr.ui', self)
         self.show()
         
 ###########* This is the ConnectionDialogue UI  *##################
@@ -1496,10 +1504,7 @@ class ConnectionDialogue(QtWidgets.QDialog):
         self.text_edit = self.findChild(QtWidgets.QTextEdit, 'textEdit')
         self.model.apiStatus(self.text_edit)
         self.show()
-        
-
-        
-                
+               
         
 def run():
     app = QtWidgets.QApplication(sys.argv) # Creates an instance of our application
@@ -1512,4 +1517,3 @@ def exit_handler():
 
 atexit.register(exit_handler)
 run()
-

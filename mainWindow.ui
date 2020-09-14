@@ -352,6 +352,25 @@
      <bool>false</bool>
     </property>
    </widget>
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>90</y>
+      <width>211</width>
+      <height>221</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="pixmap">
+     <pixmap>icon/weebguidance_logo.png</pixmap>
+    </property>
+    <property name="scaledContents">
+     <bool>true</bool>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -379,6 +398,7 @@
     <property name="title">
      <string>Donate</string>
     </property>
+    <addaction name="actionMonero"/>
     <addaction name="actionBitcoin"/>
     <addaction name="actionPaypal"/>
    </widget>
@@ -415,6 +435,11 @@
   <action name="actionPaypal">
    <property name="text">
     <string>Paypal</string>
+   </property>
+  </action>
+  <action name="actionMonero">
+   <property name="text">
+    <string>Monero</string>
    </property>
   </action>
  </widget>
