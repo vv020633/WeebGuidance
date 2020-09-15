@@ -890,8 +890,6 @@ class Model(QtWidgets.QMainWindow):
                 print('Could not connect to the MAL API at: https://api.jikan.moe/v3')
                 
             except:
-                # connection_window = ConnectionDialogue()
-                # connection_window.text_edit.setText(error)
                 print('Failed to connect to the MAL API at: https://api.jikan.moe/v3')
         
         self.titles = []
@@ -1090,8 +1088,9 @@ class MainWindow(QtWidgets.QMainWindow):
         
             
         with concurrent.futures.ThreadPoolExecutor() as executor: #Multi-threading to execute multiple downloads simultaneously
-        
-            self.results_cap = [0, 1 ,2 ,3, 4, 5 , 6, 7, 8, 9, 10, 11, 12 ,13 ,14 ,15 ,16 ,17, 18, 19, 20] # The limit of results that will be returned
+            # The limit of results that will be returned
+            self.results_cap = [0, 1 ,2 ,3, 4, 5 , 6, 7, 8, 9, 10, 11, 12 ,13 ,14 ,15 ,16 ,17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29]
+                                 
             self.f1 = executor.map(self.model.downloadImage, self.results_cap) # Download the images for the GUI
 
         self.show() #Show the GUI
@@ -1244,6 +1243,7 @@ class TopWindow(QtWidgets.QMainWindow):
 
         for self.count in range(len(self.titles)):
             try:
+                #Set the buttons on the TopUpcoming menu to match the names of the series they reference
                 self.top_button = self.findChild(QtWidgets.QPushButton, 'top_button' + str(self.count))
                 self.top_button.setText('[' + str(self.count + 1) + ']' + ': ' + self.titles[self.count])
             
@@ -1275,6 +1275,16 @@ class TopWindow(QtWidgets.QMainWindow):
         self.top_button17 = self.findChild(QtWidgets.QPushButton, 'top_button17')
         self.top_button18 = self.findChild(QtWidgets.QPushButton, 'top_button18')
         self.top_button19 = self.findChild(QtWidgets.QPushButton, 'top_button19')
+        self.top_button20 = self.findChild(QtWidgets.QPushButton, 'top_button20')
+        self.top_button21 = self.findChild(QtWidgets.QPushButton, 'top_button21')
+        self.top_button22 = self.findChild(QtWidgets.QPushButton, 'top_button22')
+        self.top_button23 = self.findChild(QtWidgets.QPushButton, 'top_button23')
+        self.top_button24 = self.findChild(QtWidgets.QPushButton, 'top_button24')
+        self.top_button25 = self.findChild(QtWidgets.QPushButton, 'top_button25')
+        self.top_button26 = self.findChild(QtWidgets.QPushButton, 'top_button26')
+        self.top_button27 = self.findChild(QtWidgets.QPushButton, 'top_button27')
+        self.top_button28 = self.findChild(QtWidgets.QPushButton, 'top_button28')
+        self.top_button29 = self.findChild(QtWidgets.QPushButton, 'top_button29')
 
         self.top_button0.clicked.connect(lambda : self.changeImage(0, self.label, self.model, self.img_directory))
         self.top_button1.clicked.connect(lambda : self.changeImage(1, self.label, self.model, self.img_directory))     
@@ -1295,7 +1305,17 @@ class TopWindow(QtWidgets.QMainWindow):
         self.top_button16.clicked.connect(lambda : self.changeImage(16, self.label, self.model, self.img_directory))  
         self.top_button17.clicked.connect(lambda : self.changeImage(17, self.label, self.model, self.img_directory))  
         self.top_button18.clicked.connect(lambda : self.changeImage(18, self.label, self.model, self.img_directory))  
-        self.top_button19.clicked.connect(lambda : self.changeImage(19, self.label, self.model, self.img_directory))  
+        self.top_button19.clicked.connect(lambda : self.changeImage(19, self.label, self.model, self.img_directory))
+        self.top_button20.clicked.connect(lambda : self.changeImage(20, self.label, self.model, self.img_directory)) 
+        self.top_button21.clicked.connect(lambda : self.changeImage(21, self.label, self.model, self.img_directory)) 
+        self.top_button22.clicked.connect(lambda : self.changeImage(22, self.label, self.model, self.img_directory)) 
+        self.top_button23.clicked.connect(lambda : self.changeImage(23, self.label, self.model, self.img_directory)) 
+        self.top_button24.clicked.connect(lambda : self.changeImage(24, self.label, self.model, self.img_directory)) 
+        self.top_button25.clicked.connect(lambda : self.changeImage(25, self.label, self.model, self.img_directory)) 
+        self.top_button26.clicked.connect(lambda : self.changeImage(26, self.label, self.model, self.img_directory)) 
+        self.top_button27.clicked.connect(lambda : self.changeImage(27, self.label, self.model, self.img_directory)) 
+        self.top_button28.clicked.connect(lambda : self.changeImage(28, self.label, self.model, self.img_directory)) 
+        self.top_button29.clicked.connect(lambda : self.changeImage(29, self.label, self.model, self.img_directory))   
         ##################Assigning Variables for the search buttons ##################
         self.reddit_button = self.findChild(QtWidgets.QPushButton, 'reddit_button')
         self.wiki_button = self.findChild(QtWidgets.QPushButton, 'wiki_button')
