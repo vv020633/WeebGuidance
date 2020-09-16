@@ -23,7 +23,6 @@ from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtCore import Qt
 
 
-
 #Instance of our Jikan class which allows for communication with the Jikan MyAnimeList API. This is the foundation of this application
 jikan = Jikan()
 
@@ -45,7 +44,6 @@ tmp_directory = tempfile.TemporaryDirectory(dir=tmp_path)
 ###########* This is the Model class through which all functions that respond to changes in the  UI exist *##################
 class Model(QtWidgets.QMainWindow):
     
-
 
     def __init__(self):
         super(Model, self).__init__()
@@ -362,8 +360,9 @@ class Model(QtWidgets.QMainWindow):
                     return self.search_url
             
                 else:
-                    self.search_string = re.sub('[^A-Za-z0-9]+', '', self.search_string)
-                    self.search_url = f'https://animixplay.com/v1/{self.search_string.lower()}'
+                    #Replace non alphanumerical characters with a dash
+                    self.search_string = re.sub('[^A-Za-z0-9]+', '-', self.search_string)
+                    self.search_url = f'https://animixplay.com/v4/4-{self.search_string.lower()}'
                     self.setAnimixToken(self.search_string.lower())
                     self.response = self.pingURL(self.search_url)
 
@@ -475,7 +474,6 @@ class Model(QtWidgets.QMainWindow):
         self.episode_count_dict = self.getEpisodeCount()
             
 
-           
         #get the episode count of the anime that the user has chosen
         self.episode_count =  self.episode_count_dict[self.search_field.text()]
 
@@ -511,7 +509,7 @@ class Model(QtWidgets.QMainWindow):
         #Filter the results to retrieve TV titles only 
         self.results = self.jikan_search['results']
         for self.result in self.results: 
-            if self.result['type'] == 'TV':
+            if self.result['type'] == 'TV' or self.result['type'] == 'OVA':
                 self.titles.append(self.result['title'])
                 try:
                     self.titles_episode_count[self.result['title']] = self.result['episodes']
