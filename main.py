@@ -3,6 +3,7 @@ import bs4
 import concurrent.futures 
 import datetime
 import os 
+import pathlib
 import pprint
 import random 
 import requests
@@ -17,6 +18,7 @@ import webbrowser
 
 from bs4 import BeautifulSoup
 from jikanpy import Jikan
+from pathlib import Path, PurePath
 from PyQt5 import QtCore, QtWidgets, uic
 from PyQt5.QtWidgets import QAction, QCompleter
 from PyQt5.QtGui import QIcon, QPixmap
@@ -27,15 +29,21 @@ from PyQt5.QtCore import Qt
 jikan = Jikan()
 
 #Here the directory is set to the current directory from which we're running the Python script
-abspath = os.path.abspath(__file__)
-dname = os.path.dirname(abspath)
+path = Path()
+abspath = pathlib.Path(__file__).resolve()
+dname = abspath.parent
 os.chdir(dname)
 
-tmp_path = dname + '/tmp'
+dir_path = Path(dname)
+
+
+tmp_path = dir_path /'tmp'
+
+temp_path = Path(tmp_path)
 
 #Create the temporary directory if it doesn't already exist
 if not os.path.exists(tmp_path):  
-    os.makedirs(tmp_path)
+    temp_path.mkdir()
 
 #The path of our temp folder which will store files that will be wiped after closing the app
 tmp_directory = tempfile.TemporaryDirectory(dir=tmp_path) 
@@ -65,10 +73,10 @@ class Model(QtWidgets.QMainWindow):
         
     #* DB directory    
     def dbPath(self):
-        self.db_path = dname + '/db'
-        
+        self.db_path = dname /'db'
+        self.db_path = Path(self.db_path)
         if not os.path.exists(self.db_path):  
-            os.makedirs(self.db_path)
+            self.db_path.mkdir()
             
         os.chdir(self.db_path)
         
@@ -418,9 +426,7 @@ class Model(QtWidgets.QMainWindow):
     
     def home_path(self):
 
-        self.abspath = os.path.abspath(__file__)
-        self.dname = os.path.dirname(abspath)
-        os.chdir(self.dname)
+        os.chdir(dname)
 
     #* Retrieves values for the main menu's predictive text search bar
     def apiToSearchBar(self, search_field, start_time):
@@ -1044,8 +1050,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self):
 
-        abspath = os.path.abspath(__file__)
-        dname = os.path.dirname(abspath)
         os.chdir(dname)
     
         super(MainWindow, self).__init__() # Call the inherited classes __init__ method
@@ -1091,12 +1095,15 @@ class MainWindow(QtWidgets.QMainWindow):
     
         os.chdir(self.img_directory) #Change to the image directory
         
-            
-        with concurrent.futures.ThreadPoolExecutor() as executor: #Multi-threading to execute multiple downloads simultaneously
-            # The limit of results that will be returned
-            self.results_cap = [0, 1 ,2 ,3, 4, 5 , 6, 7, 8, 9, 10, 11, 12 ,13 ,14 ,15 ,16 ,17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29]
-                                 
-            self.f1 = executor.map(self.model.downloadImage, self.results_cap) # Download the images for the GUI
+        self.directory_contents = os.listdir(self.img_directory) #Get the contents of this directory
+        
+        #If the images haven't been downloaded into the temp folder, download them
+        if len(self.directory_contents) == 0:
+            with concurrent.futures.ThreadPoolExecutor() as executor: #Multi-threading to execute multiple downloads simultaneously
+                # The limit of results that will be returned
+                self.results_cap = [0, 1 ,2 ,3, 4, 5 , 6, 7, 8, 9, 10, 11, 12 ,13 ,14 ,15 ,16 ,17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29]
+
+                self.f1 = executor.map(self.model.downloadImage, self.results_cap) # Download the images for the GUI
 
         self.show() #Show the GUI
 
@@ -1145,8 +1152,6 @@ class MainWindow(QtWidgets.QMainWindow):
 class DiscoverWindow(QtWidgets.QMainWindow):
 
     def __init__(self):
-        abspath = os.path.abspath(__file__)
-        dname = os.path.dirname(abspath)
         os.chdir(dname)
     
         super(DiscoverWindow, self).__init__()
