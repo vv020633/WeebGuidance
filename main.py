@@ -362,6 +362,12 @@ class Model(QtWidgets.QMainWindow):
                 else:
                     #Replace non alphanumerical characters with a dash
                     self.search_string = re.sub('[^A-Za-z0-9]+', '-', self.search_string)
+                    
+                    #Specific replacement due to the manner in which animixplay spells this show
+                    if 'yuu-yuu-hakusho' in self.search_string.lower():
+                       self.search_string = self.search_string.lower().replace('yuu-yuu-hakusho','yu-yu-hakusho')
+                       print(self.search_string)
+                        
                     self.search_url = f'https://animixplay.com/v4/4-{self.search_string.lower()}'
                     self.setAnimixToken(self.search_string.lower())
                     self.response = self.pingURL(self.search_url)
@@ -482,16 +488,27 @@ class Model(QtWidgets.QMainWindow):
         
         if self.episode_count == 0 or self.episode_count == 'None':
             
-            self.episode_count = self.getLatestEpisode()
-            self.episode_number = random.randint(1, int(self.episode_count))
-            self.episode_url = self.url + '/ep' + str(self.episode_number)
-            webbrowser.open(self.episode_url)
+            try:
+                self.episode_count = self.getLatestEpisode()
+                self.episode_number = random.randint(1, int(self.episode_count))
+                self.episode_url = self.url + '/ep' + str(self.episode_number)
+                webbrowser.open(self.episode_url)
+                
+            #In the case that the title can't be located on animixplay
+            except:
+                self.error_dialogue = ErrorDialogue()
+                self.error_dialogue.text_edit.setText(f"Could not locate '{self.search_field.text()}' on Animixplay.com. Try manually copying the anime title from their website and pasting it into the text field. From there you should be able to add it to the collection or generate a random episode.")
             
         else:
-            
-            self.episode_number = random.randint(1, int(self.episode_count))
-            self.episode_url = self.url + '/ep' + str(self.episode_number)
-            webbrowser.open(self.episode_url)
+            try:
+                self.episode_number = random.randint(1, int(self.episode_count))
+                self.episode_url = self.url + '/ep' + str(self.episode_number)
+                webbrowser.open(self.episode_url)
+                
+            #In the case that the title can't be located on animixplay
+            except:
+                self.error_dialogue = ErrorDialogue()
+                self.error_dialogue.text_edit.setText(f"Could not locate '{self.search_field.text()}' on Animixplay.com. Try manually copying the anime title from their website and pasting it into the text field. From there you should be able to add it to the collection or generate a random episode.")
             
     # TODO: Rename these two functions to have more suitable names. Build 3rd function to handle randomisation
     def randEpCollection(self, search_field):
@@ -501,7 +518,7 @@ class Model(QtWidgets.QMainWindow):
         self.url = self.createSearchURL(self.search_field.text())
         
         self.titles = []
-
+        
         self.titles_episode_count = {}
         #Search parameter is set to retrieve anime only
         self.jikan_search = jikan.search('anime', search_field.text(), page=1)
@@ -528,17 +545,26 @@ class Model(QtWidgets.QMainWindow):
             self.episode_count = 'None'
             
         if self.episode_count == 0 or self.episode_count == 'None':
-            
-            self.episode_count = self.getLatestEpisode()
-            self.episode_number = random.randint(1, int(self.episode_count))
-            self.episode_url = self.url + '/ep' + str(self.episode_number)
-            webbrowser.open(self.episode_url)
-            
+            try:
+                self.episode_count = self.getLatestEpisode()
+                self.episode_number = random.randint(1, int(self.episode_count))
+                self.episode_url = self.url + '/ep' + str(self.episode_number)
+                webbrowser.open(self.episode_url)
+                
+            except:
+                self.error_dialogue = ErrorDialogue()
+                self.error_dialogue.text_edit.setText(f"Could not locate '{self.search_field.text()}' on Animixplay.com. Try manually copying the anime title from their website and pasting it into the text field. From there you should be able to add it to the collection or generate a random episode.")
+
         else:
             
-            self.episode_number = random.randint(1, int(self.episode_count))
-            self.episode_url = self.url + '/ep' + str(self.episode_number)
-            webbrowser.open(self.episode_url)
+            try:
+                self.episode_number = random.randint(1, int(self.episode_count))
+                self.episode_url = self.url + '/ep' + str(self.episode_number)
+                webbrowser.open(self.episode_url)
+            except:
+                self.error_dialogue = ErrorDialogue()
+                self.error_dialogue.text_edit.setText(f"Could not locate '{self.search_field.text()}' on Animixplay.com. Try manually copying the anime title from their website and pasting it into the text field. From there you should be able to add it to the collection or generate a random episode.")
+
             
         
     #* Function to select a random year to find films and titles for
@@ -949,16 +975,14 @@ class Model(QtWidgets.QMainWindow):
         if ' ' in self.title:
             self.title_list = self.title.split()
             self.reddit_search_token = '%20'.join(self.title_list)
-            self.wikipedia_search_token = '_'.join(self.title_list)
             self.youtube_search_token = '+'.join(self.title_list)
         
         else:
 
             self.reddit_search_token = self.title
-            self.wikipedia_search_token = self.title
             self.youtube_search_token = self.title
 
-        return self.reddit_search_token, self.wikipedia_search_token, self.youtube_search_token
+        return self.reddit_search_token,  self.youtube_search_token
 
     #* Function to set the dictionary filled with titles and episodes that we're going to use for the episode count
     def setEpisodeCount(self, episode_dictionary):
@@ -967,9 +991,6 @@ class Model(QtWidgets.QMainWindow):
     ###########* Functions to set the search tokens *###########
     def setRedditToken(self, reddit_token):
         self.reddit_token = reddit_token
-    
-    def setWikiToken(self, wiki_token):
-        self.wiki_token = wiki_token
     
     def setYoutubeToken(self, youtube_token):
         self.youtube_token = youtube_token
@@ -980,9 +1001,6 @@ class Model(QtWidgets.QMainWindow):
     ###########* Functions to retrieve the search tokens *###########
     def getRedditToken(self):
         return self.reddit_token
-
-    def getWikiToken(self):
-        return self.wiki_token
 
     def getYoutubeToken(self):
         return self.youtube_token
@@ -1006,17 +1024,6 @@ class Model(QtWidgets.QMainWindow):
 
         except ConnectionError:
             print(f'Could not connect to destination: {self.search_link}' )
-
-    def wikiSearch(self, wiki_token):
-
-        self.wiki_token = wiki_token
-        
-        self.wiki_link = f'https://en.wikipedia.org/wiki/{self.wiki_token}'
-
-        try:
-            webbrowser.open_new_tab(self.wiki_link)
-        except ConnectionError:
-            print(f'Could not connect to destination: {self.wiki_link}' )
 
     def youTubeSearch(self, youtube_token):
 
@@ -1316,11 +1323,9 @@ class TopWindow(QtWidgets.QMainWindow):
         self.top_button29.clicked.connect(lambda : self.changeImage(29, self.label, self.model, self.img_directory))   
         ##################Assigning Variables for the search buttons ##################
         self.reddit_button = self.findChild(QtWidgets.QPushButton, 'reddit_button')
-        self.wiki_button = self.findChild(QtWidgets.QPushButton, 'wiki_button')
         self.youtube_button = self.findChild(QtWidgets.QPushButton, 'youtube_button')
         ################## Assigning search functions to buttons ##################
         self.reddit_button.clicked.connect(lambda : self.model.redditSearch(self.model.getRedditToken()))
-        self.wiki_button.clicked.connect(lambda : self.model.wikiSearch(self.model.getWikiToken()))
         self.youtube_button.clicked.connect(lambda : self.model.youTubeSearch(self.model.getYoutubeToken()))
         #Back to the home window
         self.back_button.clicked.connect(lambda : self.home())
@@ -1351,11 +1356,10 @@ class TopWindow(QtWidgets.QMainWindow):
         except:
             self.search_string = self.titles[0]
 
-        self.redditToken, self.wikiToken, self.youToken =  self.model.generateSearchToken(self.search_string)
+        self.redditToken, self.youToken =  self.model.generateSearchToken(self.search_string)
         
         #Set tokens
         self.model.setRedditToken(self.redditToken)
-        self.model.setWikiToken(self.wikiToken)
         self.model.setYoutubeToken(self.youToken)
 
 ###########* This is the Random UI through which all functions pertaining to the Random Window will be created *##################
@@ -1379,6 +1383,9 @@ class RandomWindow(QtWidgets.QMainWindow):
     
         self.rand_button.clicked.connect(self.appendRandom)
         
+        #Home button
+        self.home_button.clicked.connect(self.home)
+        
         
     def appendRandom(self):
         
@@ -1393,6 +1400,8 @@ class RandomWindow(QtWidgets.QMainWindow):
             self.rand_season = self.model.randSeason()
             #Select a random title based on that season
             self.title, self.url, self.image_url, self.episodes, self.score, self.synopsis = self.model.randAnime(self.rand_season)
+
+         
 
             #Only append the data if the title hasn't already been viewed in the Random anime window
             if self.title not in self.already_viewed:
@@ -1423,9 +1432,9 @@ class RandomWindow(QtWidgets.QMainWindow):
                 self.episodes_value.setText('[' + str(self.episodes) + ']')
                 self.score_value.setText('[' + str(self.score) + ']')
                 self.synopsis_value.setText(self.synopsis)
+                time.sleep(1)
 
-                #Home button
-                self.home_button.clicked.connect(self.home)
+                
 
             else:
                 continue
@@ -1453,10 +1462,13 @@ class CollectionWindow(QtWidgets.QMainWindow):
         self.search_field = self.findChild(QtWidgets.QLineEdit, 'search_field')
 
         self.connection = self.model.dbConnect()
-        self.model.createTable(self.connection, self.collection_list)
         
         self.collection_list = self.findChild(QtWidgets.QListWidget, 'collection_list')
+        
+        self.model.createTable(self.connection, self.collection_list)
+        
         self.collection_list.itemClicked.connect(lambda: self.model.updateField(self.search_field, self.collection_list))
+        self.collection_list.itemDoubleClicked.connect(lambda: self.model.randEpCollection(self.search_field))
         
         
         self.add_button = self.findChild(QtWidgets.QPushButton, 'add_button')
@@ -1491,20 +1503,6 @@ class BtcDonateDialogue(QtWidgets.QDialog):
         uic.loadUi('btc.ui', self)
         self.show()
         
-###########* This is the XMR Donation Dialogue UI  *##################
-class XmrDonateDialogue(QtWidgets.QDialog):
-    
-    def __init__(self):
-        
-        self.model = Model()
-        self.model.home_path()
-
-        super(XmrDonateDialogue, self).__init__()
-
-        #Load the btc ui file
-        uic.loadUi('xmr.ui', self)
-        self.show()
-        
 ###########* This is the ConnectionDialogue UI  *##################
 class ConnectionDialogue(QtWidgets.QDialog):
     
@@ -1522,7 +1520,35 @@ class ConnectionDialogue(QtWidgets.QDialog):
         self.text_edit = self.findChild(QtWidgets.QTextEdit, 'textEdit')
         self.model.apiStatus(self.text_edit)
         self.show()
-               
+        
+###########* This is the ErrorDialogue UI  *##################
+class ErrorDialogue(QtWidgets.QDialog):
+    def __init__(self):
+        
+        self.model = Model()
+        self.model.home_path()
+        
+        super(ErrorDialogue, self).__init__()
+        
+        #Load the error dialogue ui file
+        uic.loadUi('error.ui', self)
+        
+        self.text_edit = self.findChild(QtWidgets.QTextEdit, 'textEdit')
+        self.show()
+###########* This is the XMR Donation Dialogue UI  *##################
+class XmrDonateDialogue(QtWidgets.QDialog):
+    
+    def __init__(self):
+        
+        self.model = Model()
+        self.model.home_path()
+
+        super(XmrDonateDialogue, self).__init__()
+
+        #Load the btc ui file
+        uic.loadUi('xmr.ui', self)
+        self.show()
+        
         
 def run():
     app = QtWidgets.QApplication(sys.argv) # Creates an instance of our application
