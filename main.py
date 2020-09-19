@@ -8,11 +8,11 @@ import pprint
 import random 
 import requests
 import re
+import shutil
 import sys
 import sqlite3
 import time 
-import tempfile 
-import threading 
+import tempfile  
 import urllib.request
 import webbrowser
 
@@ -36,10 +36,15 @@ os.chdir(dname)
 
 dir_path = Path(dname)
 
-
+#Temp folder paths. Files stored here will be deleted on close
 tmp_path = dir_path /'tmp'
-
 temp_path = Path(tmp_path)
+
+tmp_directory_contents = os.listdir(temp_path)
+
+#If the temp folder has any files leftover in it due to a crash, then delete these files
+if len(tmp_directory_contents) > 0:
+    shutil.rmtree(temp_path)
 
 #Create the temporary directory if it doesn't already exist
 if not os.path.exists(tmp_path):  
@@ -272,7 +277,6 @@ class Model(QtWidgets.QMainWindow):
     #* Creates the search URL that will be used to search for the web page of a specific series
     def createSearchURL(self, search_string):
 
-        # TODO: Wrap this in a try catch to account for failed connections
     
         self.search_string = search_string
         #If the search string has any blank spaces separating the words then it will trigger this set of if else statements to match animixplay's search strings
@@ -314,7 +318,7 @@ class Model(QtWidgets.QMainWindow):
                     #Removes the colon from the second word. This is a pretty specific replacement
                     self.second_word = self.search_list[1]
                     if ':' in self.second_word:
-                        self.second_word = self.second_word.replace(':', '') # TODO: double-check this is actually working
+                        self.second_word = self.second_word.replace(':', '') 
 
 
                     self.animix_search_token = self.search_list[0] + '-' + self.second_word + '-'
@@ -419,9 +423,7 @@ class Model(QtWidgets.QMainWindow):
                         self.eptotal_loop = False
                         self.total_found = True
                         return int(self.total_episodes)
-            else:
-                # TODO: FUNCTION THAT FINDS THE LATEST EPISODE USING ALTERNATIVE METHOD
-                return 5
+           
         
     
     def home_path(self):
@@ -473,7 +475,7 @@ class Model(QtWidgets.QMainWindow):
             self.setEpisodeCount(self.titles_episode_count)
              
 
-    def randEpisode(self, search_field):
+    def randEPisodeMain(self, search_field):
 
         self.search_field = search_field
 
@@ -544,7 +546,7 @@ class Model(QtWidgets.QMainWindow):
                     
         self.setEpisodeCount(self.titles_episode_count)           
         
-        #Get episode count if it exists
+        #Get episode count if it exists. Otherwise just set it to None so there's a value to pass on
         try:
             self.episode_count =  self.titles_episode_count[self.search_field.text()]
         except:
@@ -552,6 +554,7 @@ class Model(QtWidgets.QMainWindow):
             
         if self.episode_count == 0 or self.episode_count == 'None':
             try:
+                #Find the episode number, create a url, and open the episode in the browser. In this case, the episode count is retrieved in a different manner
                 self.episode_count = self.getLatestEpisode()
                 self.episode_number = random.randint(1, int(self.episode_count))
                 self.episode_url = self.url + '/ep' + str(self.episode_number)
@@ -562,8 +565,8 @@ class Model(QtWidgets.QMainWindow):
                 self.error_dialogue.text_edit.setText(f"Could not locate '{self.search_field.text()}' on Animixplay.com. Try manually copying the anime title from their website and pasting it into the text field. From there you should be able to add it to the collection or generate a random episode.")
 
         else:
-            
             try:
+                #Find the episode number, create a url, and open the episode in the browser
                 self.episode_number = random.randint(1, int(self.episode_count))
                 self.episode_url = self.url + '/ep' + str(self.episode_number)
                 webbrowser.open(self.episode_url)
@@ -989,7 +992,17 @@ class Model(QtWidgets.QMainWindow):
             self.youtube_search_token = self.title
 
         return self.reddit_search_token,  self.youtube_search_token
-
+    
+    #*Function to set the synopsis in memory
+    def setSynopsis(self, synopsis):
+        self.synopsis_value = synopsis
+        
+        
+        
+    #* Function to retrieve the synopsis    
+    def getSynopsis(self):
+        return self.synopsis_value
+    
     #* Function to set the dictionary filled with titles and episodes that we're going to use for the episode count
     def setEpisodeCount(self, episode_dictionary):
         self.episode_dictionary = episode_dictionary
@@ -1003,7 +1016,6 @@ class Model(QtWidgets.QMainWindow):
         
     def setAnimixToken(self, animix_token):
         self.animix_token= animix_token
-    
     ###########* Functions to retrieve the search tokens *###########
     def getRedditToken(self):
         return self.reddit_token
@@ -1111,7 +1123,7 @@ class MainWindow(QtWidgets.QMainWindow):
     #https://forum.qt.io/topic/103613/how-to-call-keypressevent-in-pyqt5-by-returnpressed/2
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Return:
-            self.model.randEpisode(self.search_field)
+            self.model.randEPisodeMain(self.search_field)
 
     #* Top Upcoming anime GUI
     def topUpcomingMenu(self):
@@ -1216,7 +1228,7 @@ class DiscoverWindow(QtWidgets.QMainWindow):
     def home(self):
 
         self.hide()
-        main_win3 = MainWindow()
+        main_win = MainWindow()
         
 ###########* This is the Top UI through which all functions pertaining to the Top Window will be created *##################
 class TopWindow(QtWidgets.QMainWindow):
@@ -1338,7 +1350,7 @@ class TopWindow(QtWidgets.QMainWindow):
     def home(self):
     
         self.hide()
-        main_win4 = MainWindow()
+        main_win = MainWindow()
 
     #* Function to change the display image/Pixmap for the TopUpcoming window
     def changeImage(self, count, label, model, img_directory):
@@ -1383,7 +1395,8 @@ class RandomWindow(QtWidgets.QMainWindow):
         self.show()
 
         self.rand_button = self.findChild(QtWidgets.QPushButton, 'rand_button')
-
+        self.synopsis_button = self.findChild(QtWidgets.QPushButton, 'synopsis_button')
+        #Append values to the Random screen
         self.appendRandom()
     
         self.rand_button.clicked.connect(self.appendRandom)
@@ -1392,6 +1405,8 @@ class RandomWindow(QtWidgets.QMainWindow):
         self.home_button.clicked.connect(self.home)
         
         
+        
+
     def appendRandom(self):
         
         #Titles that have already been randomly selected
@@ -1405,9 +1420,9 @@ class RandomWindow(QtWidgets.QMainWindow):
             self.rand_season = self.model.randSeason()
             #Select a random title based on that season
             self.title, self.url, self.image_url, self.episodes, self.score, self.synopsis = self.model.randAnime(self.rand_season)
-
-         
-
+            
+            self.synopsis_button.clicked.connect(lambda: self.synopsisDialogue(self.synopsis))
+            
             #Only append the data if the title hasn't already been viewed in the Random anime window
             if self.title not in self.already_viewed:
 
@@ -1416,7 +1431,7 @@ class RandomWindow(QtWidgets.QMainWindow):
                 self.title_value = self.findChild(QtWidgets.QLabel, 'title_value')
                 self.episodes_value = self.findChild(QtWidgets.QLabel, 'episodes_value')
                 self.score_value = self.findChild(QtWidgets.QLabel, 'score_value')
-                self.synopsis_value = self.findChild(QtWidgets.QLabel, 'synopsis_value')
+                # self.synopsis_value = self.findChild(QtWidgets.QLabel, 'synopsis_value')
                 self.image = self.findChild(QtWidgets.QLabel, 'rand_image')
                 self.home_button = self.findChild(QtWidgets.QCommandLinkButton, 'back_button')
 
@@ -1436,19 +1451,24 @@ class RandomWindow(QtWidgets.QMainWindow):
                 self.title_value.setText( '{'+ '<a href="' + self.url + f'">{self.title}</a>' + '}')
                 self.episodes_value.setText('[' + str(self.episodes) + ']')
                 self.score_value.setText('[' + str(self.score) + ']')
-                self.synopsis_value.setText(self.synopsis)
+                # self.synopsis_value.setText(self.synopsis)
                 time.sleep(1)
 
                 
 
             else:
                 continue
-
+            
+    #* Open Synopsis Dialogue   
+    def synopsisDialogue(self, synopsis):
+        self.synopsis = synopsis
+        self.synopsis_dialogue = SynopsisDialogue(self.synopsis)
+    
      #Function to return to the Main Window
     def home(self):
 
         self.hide()
-        main_win2 = MainWindow()
+        main_win = MainWindow()
         
         
 ###########* This is the Collection Dialogue UI  *##################
@@ -1540,6 +1560,27 @@ class ErrorDialogue(QtWidgets.QDialog):
         
         self.text_edit = self.findChild(QtWidgets.QTextEdit, 'textEdit')
         self.show()
+        
+###########* This is the Synopsis Window used to display the synopsis of a series *##################
+class SynopsisDialogue(QtWidgets.QDialog):
+    
+    def __init__(self, synopsis):
+        
+        self.synopsis = synopsis
+        
+        self.model = Model()
+        self.model.home_path()
+       
+        super(SynopsisDialogue, self).__init__()
+        #Load the synopsis dialogue file
+        uic.loadUi('synopsis.ui', self)
+        self.synopsis_textedit= self.findChild(QtWidgets.QTextEdit, 'textEdit')
+       
+        # self.synopsis = self.model.getSynopsis()
+        self.synopsis_textedit.setText(self.synopsis)
+
+        self.show()
+        
 ###########* This is the XMR Donation Dialogue UI  *##################
 class XmrDonateDialogue(QtWidgets.QDialog):
     
@@ -1550,7 +1591,7 @@ class XmrDonateDialogue(QtWidgets.QDialog):
 
         super(XmrDonateDialogue, self).__init__()
 
-        #Load the btc ui file
+        #Load the  Monero ui file
         uic.loadUi('xmr.ui', self)
         self.show()
         

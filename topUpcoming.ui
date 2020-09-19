@@ -2727,6 +2727,31 @@
     <string>Check API connection</string>
    </property>
   </action>
+  <action name="actionCollection">
+   <property name="text">
+    <string>Collection</string>
+   </property>
+  </action>
+  <action name="actionConnection_Status">
+   <property name="text">
+    <string>Connection Status</string>
+   </property>
+  </action>
+  <action name="actionMonero">
+   <property name="text">
+    <string>Monero</string>
+   </property>
+  </action>
+  <action name="actionBitcoin">
+   <property name="text">
+    <string>Bitcoin</string>
+   </property>
+  </action>
+  <action name="actionPaypal">
+   <property name="text">
+    <string>Paypal</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>
