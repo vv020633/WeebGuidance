@@ -12,7 +12,7 @@ import shutil
 import sys
 import sqlite3
 import time 
-import tempfile  
+import tempfile   
 import urllib.request
 import webbrowser
 
@@ -1073,6 +1073,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.bitcoin_action = self.findChild(QtWidgets.QAction, 'actionBitcoin')
         self.bitcoin_action.triggered.connect(self.donateBitcoinWindow)
         
+        #Menu bar Monero donation
         self.monero_action = self.findChild(QtWidgets.QAction, 'actionMonero')
         self.monero_action.triggered.connect(self.donateMoneroWindow)
 
@@ -1087,6 +1088,10 @@ class MainWindow(QtWidgets.QMainWindow):
         #Menu bar option for mongodb collection
         self.collection_action = self.findChild(QtWidgets.QAction, 'actionCollection')
         self.collection_action.triggered.connect(self.collection)
+        
+        #Menu bar option for help page
+        self.help_action = self.findChild(QtWidgets.QAction, 'actionHelp')
+        self.help_action.triggered.connect(self.helpDialogue)
         
         self.search_field = self.findChild(QtWidgets.QLineEdit, 'search_field')
         self.top_button = self.findChild(QtWidgets.QPushButton, 'topUpcoming_button')
@@ -1134,7 +1139,11 @@ class MainWindow(QtWidgets.QMainWindow):
     def discoverMenu(self):
         self.hide() #Hide the main window
         self.discover_window = DiscoverWindow()
-
+        
+    #* Help Menu GUI
+    def helpDialogue(self):
+        self.help_dialoguie = HelpDialogue()
+        
     #* Random Menu GUI
     def randomMenu(self):
         self.hide() #Hide the main window
@@ -1196,7 +1205,10 @@ class DiscoverWindow(QtWidgets.QMainWindow):
         self.rand_button = self.findChild(QtWidgets.QPushButton, 'randButton')
         self.rand_button_2 = self.findChild(QtWidgets.QPushButton, 'randButton_2')
 
-
+         #Menu bar option for help page
+        self.help_action = self.findChild(QtWidgets.QAction, 'actionHelp')
+        self.help_action.triggered.connect(self.helpDialogue)
+        
         #Set the series radio button to be the one that's checked on startup
         self.series_radiobutton.setChecked(True)
         
@@ -1224,6 +1236,10 @@ class DiscoverWindow(QtWidgets.QMainWindow):
         for self.genre in self.genres.keys():
             self.genre_combo.addItem(str(self.genre))
     
+      #* Help Menu GUI
+    def helpDialogue(self):
+        self.help_dialogue = HelpDialogue()
+        
     #* Function to return to the Main Window
     def home(self):
 
@@ -1239,6 +1255,10 @@ class TopWindow(QtWidgets.QMainWindow):
 
         #Load the topUpcoming.ui file
         uic.loadUi('topUpcoming.ui', self) 
+        
+        #Menu bar option for help page
+        self.help_action = self.findChild(QtWidgets.QAction, 'actionHelp')
+        self.help_action.triggered.connect(self.helpDialogue)
         
         self.show()
         self.model = Model()
@@ -1348,10 +1368,14 @@ class TopWindow(QtWidgets.QMainWindow):
         self.back_button.clicked.connect(lambda : self.home())
 
     def home(self):
-    
+
         self.hide()
         main_win = MainWindow()
-
+        
+    #* Help Menu GUI
+    def helpDialogue(self):
+        self.help_dialogue = HelpDialogue()
+        
     #* Function to change the display image/Pixmap for the TopUpcoming window
     def changeImage(self, count, label, model, img_directory):
         
@@ -1394,6 +1418,10 @@ class RandomWindow(QtWidgets.QMainWindow):
         uic.loadUi('random.ui', self)
         self.show()
 
+        #Menu bar option for help page
+        self.help_action = self.findChild(QtWidgets.QAction, 'actionHelp')
+        self.help_action.triggered.connect(self.helpDialogue)
+        
         self.rand_button = self.findChild(QtWidgets.QPushButton, 'rand_button')
         self.synopsis_button = self.findChild(QtWidgets.QPushButton, 'synopsis_button')
         #Append values to the Random screen
@@ -1464,12 +1492,17 @@ class RandomWindow(QtWidgets.QMainWindow):
         self.synopsis = synopsis
         self.synopsis_dialogue = SynopsisDialogue(self.synopsis)
     
-     #Function to return to the Main Window
+     #* Help Menu GUI
+    def helpDialogue(self):
+        self.help_dialogue = HelpDialogue()
+        
+     #*Function to return to the Main Window
     def home(self):
 
         self.hide()
         main_win = MainWindow()
-        
+    
+
         
 ###########* This is the Collection Dialogue UI  *##################
 class CollectionWindow(QtWidgets.QMainWindow):
@@ -1561,6 +1594,20 @@ class ErrorDialogue(QtWidgets.QDialog):
         self.text_edit = self.findChild(QtWidgets.QTextEdit, 'textEdit')
         self.show()
         
+###########* This is the Help Window UI  *##################
+class HelpDialogue(QtWidgets.QDialog):
+    def __init__(self):
+        
+        self.model = Model()
+        self.model.home_path()
+        
+        super(HelpDialogue, self).__init__()
+        
+        #Load the error dialogue ui file
+        uic.loadUi('help.ui', self)
+        
+        self.show()
+              
 ###########* This is the Synopsis Window used to display the synopsis of a series *##################
 class SynopsisDialogue(QtWidgets.QDialog):
     
