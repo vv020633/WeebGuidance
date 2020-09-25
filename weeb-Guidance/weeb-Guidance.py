@@ -36,19 +36,25 @@ os.chdir(dname)
 
 dir_path = Path(dname)
 
+#This is the path where the ui files will be stored
+frms_path = dir_path /'forms'
+forms_path = Path(frms_path)
+
 #Temp folder paths. Files stored here will be deleted on close
 tmp_path = dir_path /'tmp'
 temp_path = Path(tmp_path)
 
-tmp_directory_contents = os.listdir(temp_path)
+if os.path.isdir(temp_path):
+    tmp_directory_contents = os.listdir(temp_path)
 
-#If the temp folder has any files leftover in it due to a crash, then delete these files
-if len(tmp_directory_contents) > 0:
-    shutil.rmtree(temp_path)
+    #If the temp folder has any files leftover in it due to a crash, then delete these files
+    if len(tmp_directory_contents) > 0:
+        shutil.rmtree(temp_path)
+        os.mkdir(tmp_path)
 
 #Create the temporary directory if it doesn't already exist
-if not os.path.exists(tmp_path):  
-    temp_path.mkdir()
+else:  
+    os.mkdir(tmp_path)
 
 #The path of our temp folder which will store files that will be wiped after closing the app
 tmp_directory = tempfile.TemporaryDirectory(dir=tmp_path) 
@@ -1065,7 +1071,7 @@ class MainWindow(QtWidgets.QMainWindow):
         os.chdir(dname)
     
         super(MainWindow, self).__init__() # Call the inherited classes __init__ method
-        uic.loadUi('mainWindow.ui', self) #Load the mainwindow .ui file
+        uic.loadUi(forms_path / 'mainWindow.ui', self) #Load the mainwindow .ui file
 
         self.model = Model()
 
@@ -1176,7 +1182,7 @@ class DiscoverWindow(QtWidgets.QMainWindow):
         os.chdir(dname)
     
         super(DiscoverWindow, self).__init__()
-        uic.loadUi('discover.ui', self)
+        uic.loadUi(forms_path /'discover.ui', self)
 
 
         self.show()
@@ -1254,7 +1260,7 @@ class TopWindow(QtWidgets.QMainWindow):
         super(TopWindow, self).__init__()
 
         #Load the topUpcoming.ui file
-        uic.loadUi('topUpcoming.ui', self) 
+        uic.loadUi(forms_path / 'topUpcoming.ui', self) 
         
         #Menu bar option for help page
         self.help_action = self.findChild(QtWidgets.QAction, 'actionHelp')
@@ -1357,7 +1363,8 @@ class TopWindow(QtWidgets.QMainWindow):
         self.top_button26.clicked.connect(lambda : self.changeImage(26, self.label, self.model, self.img_directory)) 
         self.top_button27.clicked.connect(lambda : self.changeImage(27, self.label, self.model, self.img_directory)) 
         self.top_button28.clicked.connect(lambda : self.changeImage(28, self.label, self.model, self.img_directory)) 
-        self.top_button29.clicked.connect(lambda : self.changeImage(29, self.label, self.model, self.img_directory))   
+        self.top_button29.clicked.connect(lambda : self.changeImage(29, self.label, self.model, self.img_directory))
+
         ##################Assigning Variables for the search buttons ##################
         self.reddit_button = self.findChild(QtWidgets.QPushButton, 'reddit_button')
         self.youtube_button = self.findChild(QtWidgets.QPushButton, 'youtube_button')
@@ -1415,7 +1422,7 @@ class RandomWindow(QtWidgets.QMainWindow):
         super(RandomWindow, self).__init__()
 
         #Load the random ui file
-        uic.loadUi('random.ui', self)
+        uic.loadUi(forms_path / 'random.ui', self)
         self.show()
 
         #Menu bar option for help page
@@ -1431,7 +1438,6 @@ class RandomWindow(QtWidgets.QMainWindow):
         
         #Home button
         self.home_button.clicked.connect(self.home)
-        
         
         
 
@@ -1503,7 +1509,6 @@ class RandomWindow(QtWidgets.QMainWindow):
         main_win = MainWindow()
     
 
-        
 ###########* This is the Collection Dialogue UI  *##################
 class CollectionWindow(QtWidgets.QMainWindow):
     
@@ -1515,7 +1520,7 @@ class CollectionWindow(QtWidgets.QMainWindow):
         super(CollectionWindow, self).__init__()
 
         #Load the connection ui file
-        uic.loadUi('collection.ui', self)
+        uic.loadUi(forms_path / 'collection.ui', self)
         
         self.search_field = self.findChild(QtWidgets.QLineEdit, 'search_field')
 
@@ -1558,7 +1563,7 @@ class BtcDonateDialogue(QtWidgets.QDialog):
         super(BtcDonateDialogue, self).__init__()
 
         #Load the btc ui file
-        uic.loadUi('btc.ui', self)
+        uic.loadUi(forms_path / 'btc.ui', self)
         self.show()
         
 ###########* This is the ConnectionDialogue UI  *##################
@@ -1572,7 +1577,7 @@ class ConnectionDialogue(QtWidgets.QDialog):
         super(ConnectionDialogue, self).__init__()
 
         #Load the connection ui file
-        uic.loadUi('conn.ui', self)
+        uic.loadUi(forms_path / 'conn.ui', self)
         
         
         self.text_edit = self.findChild(QtWidgets.QTextEdit, 'textEdit')
@@ -1589,7 +1594,7 @@ class ErrorDialogue(QtWidgets.QDialog):
         super(ErrorDialogue, self).__init__()
         
         #Load the error dialogue ui file
-        uic.loadUi('error.ui', self)
+        uic.loadUi(forms_path / 'error.ui', self)
         
         self.text_edit = self.findChild(QtWidgets.QTextEdit, 'textEdit')
         self.show()
@@ -1604,7 +1609,7 @@ class HelpDialogue(QtWidgets.QDialog):
         super(HelpDialogue, self).__init__()
         
         #Load the error dialogue ui file
-        uic.loadUi('help.ui', self)
+        uic.loadUi(forms_path / 'help.ui', self)
         
         self.show()
               
@@ -1620,7 +1625,7 @@ class SynopsisDialogue(QtWidgets.QDialog):
        
         super(SynopsisDialogue, self).__init__()
         #Load the synopsis dialogue file
-        uic.loadUi('synopsis.ui', self)
+        uic.loadUi(forms_path / 'synopsis.ui', self)
         self.synopsis_textedit= self.findChild(QtWidgets.QTextEdit, 'textEdit')
        
         # self.synopsis = self.model.getSynopsis()
@@ -1639,14 +1644,18 @@ class XmrDonateDialogue(QtWidgets.QDialog):
         super(XmrDonateDialogue, self).__init__()
 
         #Load the  Monero ui file
-        uic.loadUi('xmr.ui', self)
+        uic.loadUi(forms_path / 'xmr.ui', self)
         self.show()
         
         
 def run():
-    app = QtWidgets.QApplication(sys.argv) # Creates an instance of our application
-    window = MainWindow() # Creates an instance of our window class
-    app.exec_()  #Start the app
+    
+    # Creates an instance of our application
+    app = QtWidgets.QApplication(sys.argv) 
+    # Creates an instance of our window class
+    window = MainWindow() 
+    #Start the app
+    app.exec_()  
 
 #Tasks to do upon closing the application
 def exit_handler():
