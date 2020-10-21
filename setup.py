@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='Weeb-Guidance',
-    version='1.0.10',
+    version='1.0.13',
     author='Chas McLaughlin',
     author_email='weebguidance@gmail.com',
     description='A random anime episode selector',
@@ -13,7 +13,7 @@ setuptools.setup(
     url="https://github.com/vv020633/myAnimeListV2",
     license="MIT",
     packages= setuptools.find_packages(),
-    install_requires=['PyQt5', 'beautifulsoup4','jikanpy'],
+    install_requires=['beautifulsoup4','jikanpy','pyqt5','chromedriver-autoinstaller', 'selenium'],
     python_requires='>=3.6',
     classifiers=[
         'Environment :: Console',
@@ -34,8 +34,5 @@ setuptools.setup(
     package_data = {
         'weeb-guidance' : ['forms/*.ui', 'icon/*.png' ],
     },
-    # data_files = {
-    #     ('share/applications/', ['weeb-guidance.desktop'])
-    # }
-    # cmdclass=cmdclass,
+
 )

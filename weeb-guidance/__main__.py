@@ -1,6 +1,7 @@
 import atexit
 import bs4
 import concurrent.futures 
+import chromedriver_autoinstaller
 import datetime
 import os 
 import pathlib
@@ -11,6 +12,7 @@ import re
 import shutil
 import sys
 import sqlite3
+import selenium
 import time 
 import tempfile   
 import urllib.request
@@ -18,31 +20,49 @@ import webbrowser
 
 from bs4 import BeautifulSoup
 from jikanpy import Jikan
+from selenium import webdriver
+
 from pathlib import Path, PurePath
 from PyQt5 import QtCore, QtWidgets, uic
 from PyQt5.QtWidgets import QAction, QCompleter
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtCore import Qt
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
 
+
+chromedriver_autoinstaller.install()  # Check if the current version of chromedriver exists
+                                      # and if it doesn't exist, download it automatically,
+                                      # then add chromedriver to path
+
+#Instance of our Chromedriver which will be used to make requests/preview web pages in code
+chrome_options =  Options()
+chrome_options.add_argument("--headless")
+chrome_options.add_argument("--window-size=1920x1080")
+driver = webdriver.Chrome(options=chrome_options)
 
 #Instance of our Jikan class which allows for communication with the Jikan MyAnimeList API. This is the foundation of this application
 jikan = Jikan()
 
+
+
 #Here the directory is set to the current directory from which we're running the Python script
 path = Path()
-abspath = pathlib.Path(__file__).resolve()
+abspath = Path(__file__).resolve()
 dname = abspath.parent
 os.chdir(dname)
 
 dir_path = Path(dname)
 
+#Get the current directory
+cwd = os.getcwd()
+
+
 #This is the path where the ui files will be stored
-frms_path = dir_path /'forms'
-forms_path = Path(frms_path)
+forms_path = Path(cwd) /"forms"
 
 #Temp folder paths. Files stored here will be deleted on close
-tmp_path = dir_path /'tmp'
-temp_path = Path(tmp_path)
+temp_path = Path(cwd) /'tmp'
 
 if os.path.isdir(temp_path):
     tmp_directory_contents = os.listdir(temp_path)
@@ -50,14 +70,14 @@ if os.path.isdir(temp_path):
     #If the temp folder has any files leftover in it due to a crash, then delete these files
     if len(tmp_directory_contents) > 0:
         shutil.rmtree(temp_path)
-        os.mkdir(tmp_path)
+        os.mkdir(temp_path)
 
 #Create the temporary directory if it doesn't already exist
 else:  
-    os.mkdir(tmp_path)
+    os.mkdir(temp_path)
 
 #The path of our temp folder which will store files that will be wiped after closing the app
-tmp_directory = tempfile.TemporaryDirectory(dir=tmp_path) 
+tmp_directory = tempfile.TemporaryDirectory(dir=temp_path) 
 
 
 ###########* This is the Model class through which all functions that respond to changes in the  UI exist *##################
@@ -232,18 +252,17 @@ class Model(QtWidgets.QMainWindow):
     #Animixplay returns a page with an html error embedded in the html, so this method works better than pinging the webpage
     def pingURL(self, search_url):
 
-        #Make a request to the webpage and use BeautifulSoup to search for a 404 error or signs of one being loaded
-        self.search_url = search_url
-        self.request = requests.get(self.search_url)
-        self.source = self.request.content
-        self.soup = BeautifulSoup(self.source, 'html.parser')
-        self.error_span = self.soup.find('span', class_ = 'animetitle')
-        
-        if self.error_span.text == 'Generating...' or self.error_span.text == '404 Not Found':
-            return False
+        #Make a request to the webpage and use Selenium to search for a 404 error or signs of one being loaded
+        driver.get(search_url)
+        self.loading_page = WebDriverWait(driver, timeout=3).until(lambda d: d.find_element_by_class_name("animetitle"))
+        try:
+            if self.loading_page.text == 'Generating...' or self.loading_page.text == '404 Not Found':
+                 return False
+            else:
+                return True
 
-        else:
-            return True
+        except AttributeError:
+            print(self.error_span)
     
     #* Displays the current connectivity of the API to the user based on the status messages that are retunred by the jikan API
     def apiStatus(self, text_edit):
@@ -283,8 +302,8 @@ class Model(QtWidgets.QMainWindow):
     #* Creates the search URL that will be used to search for the web page of a specific series
     def createSearchURL(self, search_string):
 
-    
         self.search_string = search_string
+        print(self.search_string)
         #If the search string has any blank spaces separating the words then it will trigger this set of if else statements to match animixplay's search strings
         if ' ' in self.search_string:
             self.search_list = self.search_string.split()  
@@ -1298,7 +1317,11 @@ class TopWindow(QtWidgets.QMainWindow):
             except:
                 print(f'Title: {self.titles[self.count]} will not be appended')
 
-
+        self.search_string = self.titles[0]
+        self.redditToken, self.youToken = self.model.generateSearchToken(self.search_string)
+        self.model.setRedditToken(self.redditToken)
+        self.model.setYoutubeToken(self.youToken)
+        
         self.label = self.findChild(QtWidgets.QLabel, 'top_img')
         
         self.back_button = self.findChild(QtWidgets.QCommandLinkButton, 'backButton')
