@@ -311,7 +311,6 @@ class Model(QtWidgets.QMainWindow):
     def createSearchURL(self, search_string):
 
         self.search_string = search_string
-        print(self.search_string)
         #If the search string has any blank spaces separating the words then it will trigger this set of if else statements to match animixplay's search strings
         if ' ' in self.search_string:
             self.search_list = self.search_string.split()  
@@ -411,7 +410,6 @@ class Model(QtWidgets.QMainWindow):
                     #Specific replacement due to the manner in which animixplay spells this show
                     if 'yuu-yuu-hakusho' in self.search_string.lower():
                        self.search_string = self.search_string.lower().replace('yuu-yuu-hakusho','yu-yu-hakusho')
-                       print(self.search_string)
                         
                     self.search_url = f'https://animixplay.com/v4/4-{self.search_string.lower()}'
                     self.setAnimixToken(self.search_string.lower())
@@ -1672,6 +1670,7 @@ class SynopsisDialogue(QtWidgets.QDialog):
         self.model.home_path()
        
         super(SynopsisDialogue, self).__init__()
+        
         #Load the synopsis dialogue file
         uic.loadUi(forms_path / 'synopsis.ui', self)
         self.synopsis_textedit= self.findChild(QtWidgets.QTextEdit, 'textEdit')

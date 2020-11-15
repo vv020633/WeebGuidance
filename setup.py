@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='weeb-guidance',
-    version='1.0.16',
+    version='1.0.17',
     author='Chas McLaughlin',
     author_email='weebguidance@gmail.com',
     description='A random anime episode selector',
