@@ -67,6 +67,12 @@ pip install selenium
 
 ## Usage
 ![MainMenu](https://user-images.githubusercontent.com/33399376/99194364-c9c9c580-2776-11eb-8e43-41b007a65bc5.png)
+![Collection](https://user-images.githubusercontent.com/33399376/99194396-04336280-2777-11eb-9372-4da49da4b87b.png)
+![DiscoverGenre](https://user-images.githubusercontent.com/33399376/99194406-131a1500-2777-11eb-9b11-1aa1c8a13a03.png)
+![DiscoverYear](https://user-images.githubusercontent.com/33399376/99194409-16150580-2777-11eb-8a95-7fee3b04d41f.png)
+![TopUpcoming](https://user-images.githubusercontent.com/33399376/99194418-2c22c600-2777-11eb-8469-23c8f0c2ba0f.png)
+![Random](https://user-images.githubusercontent.com/33399376/99194421-2f1db680-2777-11eb-9953-167a31e0875e.png)
+
 
 ### Linux
 
