@@ -78,7 +78,6 @@ I would like to thank Humza Younus for crafting the icon/symbol. I would like to
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
-
 Please make sure to update tests as appropriate. If anyone wants to build this for MAC, please feel free to reach out.
 
 ## Support
