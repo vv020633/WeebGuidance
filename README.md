@@ -66,6 +66,7 @@ pip install selenium
 
 
 ## Usage
+![MainMenu](https://user-images.githubusercontent.com/33399376/99194364-c9c9c580-2776-11eb-8e43-41b007a65bc5.png)
 
 ### Linux
 
