@@ -423,7 +423,7 @@
       </property>
       <property name="icon">
        <iconset theme="back">
-        <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
+        <normaloff>../../../../../../../../../.designer/backup</normaloff>../../../../../../../../../.designer/backup</iconset>
       </property>
      </widget>
      <widget class="QWidget" name="layoutWidget">
@@ -598,8 +598,8 @@
        <string>Main Menu</string>
       </property>
       <property name="icon">
-       <iconset theme="back">
-        <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
+       <iconset>
+        <normaloff>../icon/BeautyLine/actions/scalable/arrow-left.svg</normaloff>../icon/BeautyLine/actions/scalable/arrow-left.svg</iconset>
       </property>
      </widget>
      <widget class="QWidget" name="layoutWidget">

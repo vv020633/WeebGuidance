@@ -3,9 +3,11 @@ import bs4
 import concurrent.futures 
 import chromedriver_autoinstaller
 import datetime
+import jikanpy
 import os 
 import pathlib
 import pprint
+import PyQt5
 import random 
 import requests
 import re
@@ -30,10 +32,10 @@ from PyQt5.QtCore import Qt
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 
-
-chromedriver_autoinstaller.install()  # Check if the current version of chromedriver exists
-                                      # and if it doesn't exist, download it automatically,
-                                      # then add chromedriver to path
+# Check if the current version of chromedriver exists
+# and if it doesn't exist, download it automatically,
+# then add chromedriver to path
+chromedriver_autoinstaller.install()  
 
 #Instance of our Chromedriver which will be used to make requests/preview web pages in code
 chrome_options =  Options()
@@ -44,7 +46,12 @@ driver = webdriver.Chrome(options=chrome_options)
 #Instance of our Jikan class which allows for communication with the Jikan MyAnimeList API. This is the foundation of this application
 jikan = Jikan()
 
+#This is to account for DPI scaling on high res machines
+if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
+    PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
 
+if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
+    PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
 
 #Here the directory is set to the current directory from which we're running the Python script
 path = Path()
@@ -79,6 +86,7 @@ else:
 #The path of our temp folder which will store files that will be wiped after closing the app
 tmp_directory = tempfile.TemporaryDirectory(dir=temp_path) 
 
+episode_dictionary={}
 
 ###########* This is the Model class through which all functions that respond to changes in the  UI exist *##################
 class Model(QtWidgets.QMainWindow):
@@ -508,13 +516,18 @@ class Model(QtWidgets.QMainWindow):
         #Create url based on the text field
         self.url = self.createSearchURL(self.search_field.text())
         
-        
+        self.episode_count_dict = {}
+
         #Get episode count if it exists
         self.episode_count_dict = self.getEpisodeCount()
             
+        try:
+             #get the episode count of the anime that the user has chosen
+            self.episode_count =  self.episode_count_dict[self.search_field.text()]
 
-        #get the episode count of the anime that the user has chosen
-        self.episode_count =  self.episode_count_dict[self.search_field.text()]
+        except KeyError:
+            self.episode_count = 'None'
+
 
         #If the series is ongoing it will have an episode count of none, in which case the
         #Episode count will be gathered from the html in the webpage   
@@ -545,6 +558,7 @@ class Model(QtWidgets.QMainWindow):
             
     # TODO: Rename these two functions to have more suitable names. Build 3rd function to handle randomisation
     def randEpCollection(self, search_field):
+
         self.search_field = search_field
         
         #Create url based on the text field
@@ -1030,7 +1044,7 @@ class Model(QtWidgets.QMainWindow):
     
     #* Function to set the dictionary filled with titles and episodes that we're going to use for the episode count
     def setEpisodeCount(self, episode_dictionary):
-        self.episode_dictionary = episode_dictionary
+        episode_dictionary = episode_dictionary
 
     ###########* Functions to set the search tokens *###########
     def setRedditToken(self, reddit_token):
@@ -1053,7 +1067,7 @@ class Model(QtWidgets.QMainWindow):
 
     #* Function to get the dictionary filled with titles and episodes that  are going to be used for the episode count
     def getEpisodeCount(self):
-        return self.episode_dictionary
+        return episode_dictionary
         
     ###########* Functions to search the Internet for data on the target title *###########
     def redditSearch(self, reddit_token):
@@ -1570,10 +1584,21 @@ class CollectionWindow(QtWidgets.QMainWindow):
         self.start_time = datetime.datetime.now()
         self.search_field.textChanged.connect(lambda: self.model.apiToSearchBar(self.search_field, self.start_time))
         
+        #Menu bar option for help page
+        self.help_action = self.findChild(QtWidgets.QAction, 'actionHelp')
+        self.help_action.triggered.connect(self.helpDialogue)
+        
         
         self.show()
+
+    #* Help Menu GUI
+    def helpDialogue(self):
+        self.help_dialoguie = HelpDialogue()
         
-        
+    def keyPressEvent(self, event):
+         if event.key() == QtCore.Qt.Key_Return:
+            self.model.randEpCollection(self.search_field)     
+    
         
 ###########* This is the BTC Donation Dialogue UI  *##################
 class BtcDonateDialogue(QtWidgets.QDialog):
@@ -1686,3 +1711,4 @@ def exit_handler():
 
 atexit.register(exit_handler)
 run()
+

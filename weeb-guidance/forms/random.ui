@@ -464,6 +464,10 @@
   <property name="windowTitle">
    <string>weeb-Guidance</string>
   </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>../icon/weebguidance.png</normaloff>../icon/weebguidance.png</iconset>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QLabel" name="rand_image">
     <property name="geometry">
@@ -554,8 +558,8 @@
      <string>Main Menu</string>
     </property>
     <property name="icon">
-     <iconset theme="back">
-      <normaloff>.</normaloff>.</iconset>
+     <iconset>
+      <normaloff>../icon/BeautyLine/actions/scalable/arrow-left.svg</normaloff>../icon/BeautyLine/actions/scalable/arrow-left.svg</iconset>
     </property>
    </widget>
    <widget class="QPushButton" name="rand_button">
