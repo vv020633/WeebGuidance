@@ -2,16 +2,16 @@
 
 Weeb Guidance is a GUI tool built atop the functionality of the Jikan anime API and the content available at https://animixplay.to/ The user can select a random episode of an anime series of their choice. This will be handy if you have a series in mind that you want to watch or simply have on in the background, but you don't have a specific episode number in mind. The search bar can be slightly unresponsive at times due to the limitations of the API, So the collection windows provides the opportunity to save titles in a collection (manually input or copy+paste a title) which can be retrieved immediately.
 
-##Top Upcoming Menu
+## Top Upcoming Menu
 -View Top Upcoming Anime series
 -Search for more information on Reddit
 -Search for more information on YouTube
 
-##Discover Series Menu
+## Discover Series Menu
 -Discover Titles based on their Genre
 -Discover Titles based on the year of their release
 
-##Random Menu
+## Random Menu
 -Generate a random title
 
 ## Installation
@@ -72,7 +72,7 @@ python3 -m weeb-guidance
 Navigate to shortcut or installation path -> Right-click executable file -> Run as administrator
 You must run as administrator!!! Otherwise, Weeb-Guidance won't have access to the temp file location. No bueno.
 
-##Authors and acknowledgment
+## Authors and acknowledgment
 I would like to thank Humza Younus for crafting the icon/symbol. I would like to thank Grand Wizard/Professor Pat Parslow for not outright failing me in Business Programming when my code was a steaming heap of garbage. LOOK PAT! YOUR ENCOURAGMENT HAS BIRTHED THE CULMINATION OF MY IDEALS. MY MAGNUM OPUS. WITNESS ME!!! 
 
 ## Contributing
@@ -81,7 +81,7 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 
 Please make sure to update tests as appropriate. If anyone wants to build this for MAC, please feel free to reach out.
 
-##Support
+## Support
 
 Drop me an e-mail at weebguidance@gmail.com if you have any questions, bugs you'd like me to fix, suggestions, collaboration, etc. This is really just something that I've put together as a side project, but if its something you'd like to see improved, then feel free to donate. Guidance.
 
