@@ -22,6 +22,12 @@ Use the package manager pip to install weeb-guidance
 ```bash
 pip install weeb-guidance
 ```
+or
+
+```bash
+pip3 install weeb-guidance
+```
+
 
 ### Windows
 
