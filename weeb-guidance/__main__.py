@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import atexit
 import bs4
 import concurrent.futures 

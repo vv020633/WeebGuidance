@@ -5,12 +5,13 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='weeb-guidance',
-    version='1.0.2',
+    version='1.0.20',
     author='Chas McLaughlin',
     author_email='weebguidance@gmail.com',
     description='A random anime episode selector',
     long_description=long_description,
-    url="https://github.com/vv020633/myAnimeListV2",
+    long_description_content_type='text/markdown',
+    url="https://github.com/vv020633/WeebGuidance",
     license="MIT",
     packages= setuptools.find_packages(),
     install_requires=['beautifulsoup4','jikanpy','pyqt5','chromedriver-autoinstaller', 'selenium'],
