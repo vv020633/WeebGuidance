@@ -81,7 +81,10 @@ You should run as administrator!!! Otherwise, Weeb-Guidance won't have full acce
 
 After running Weeb Guidance you'll likely notice this Window:
 
+*************************************************************************************************************************
 ![DevToolsListening](https://user-images.githubusercontent.com/33399376/102270518-ff003980-3f15-11eb-8450-d73ac7312684.PNG)
+*************************************************************************************************************************
+
 
 Not to worry as this is the chromedriver loading up. Don't close it, but keep it minimized if you must. Ideally this wouldn't need to be opened, but its a bit of a pain to try to remove it, and an even bigger pain trying to rebuild this using a different method
 
