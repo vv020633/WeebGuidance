@@ -422,8 +422,8 @@
        <string>Main Menu</string>
       </property>
       <property name="icon">
-       <iconset theme="back">
-        <normaloff>../../../../../../../../../.designer/backup</normaloff>../../../../../../../../../.designer/backup</iconset>
+       <iconset>
+        <normaloff>../icon/BeautyLine/actions/scalable/go-previous.svg</normaloff>../icon/BeautyLine/actions/scalable/go-previous.svg</iconset>
       </property>
      </widget>
      <widget class="QWidget" name="layoutWidget">

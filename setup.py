@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='weeb-guidance',
-    version='1.0.20',
+    version='1.0.400',
     author='Chas McLaughlin',
     author_email='weebguidance@gmail.com',
     description='A random anime episode selector',
@@ -33,7 +33,7 @@ setuptools.setup(
         'weeb-guidance': 'weeb-guidance'
         },
     package_data = {
-        'weeb-guidance' : ['forms/*.ui', 'icon/*.png' ],
+        'weeb-guidance' : ['forms/*.ui', 'icon/*.png', 'icon/*.svg' ],
     },
 
 )

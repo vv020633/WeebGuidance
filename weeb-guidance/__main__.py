@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 import atexit
 import bs4
@@ -43,7 +43,12 @@ chromedriver_autoinstaller.install()
 chrome_options =  Options()
 chrome_options.add_argument("--headless")
 chrome_options.add_argument("--window-size=1920x1080")
+chrome_options.add_argument('--hide-scrollbars')
+chrome_options.add_argument('--disable-gpu')
+chrome_options.add_argument("--log-level=3")  # fatal logs only
 driver = webdriver.Chrome(options=chrome_options)
+
+
 
 #Instance of our Jikan class which allows for communication with the Jikan MyAnimeList API. This is the foundation of this application
 jikan = Jikan()
@@ -68,10 +73,13 @@ cwd = os.getcwd()
 
 
 #This is the path where the ui files will be stored
-forms_path = Path(cwd) /"forms"
+forms_path = Path(cwd) /'forms'
 
 #Temp folder paths. Files stored here will be deleted on close
 temp_path = Path(cwd) /'tmp'
+
+#DB folder paths. Files pertaining to the db will be stored here
+db_path = Path(cwd) /'db'
 
 if os.path.isdir(temp_path):
     tmp_directory_contents = os.listdir(temp_path)
@@ -102,7 +110,7 @@ class Model(QtWidgets.QMainWindow):
     #* Establish connection with SQLITE DB
     def dbConnect(self):
         
-        self.dbPath()
+        os.chdir(db_path)
         
         try:
             self.connection = sqlite3.connect('weebguidance.db')
@@ -114,6 +122,9 @@ class Model(QtWidgets.QMainWindow):
         
     #* DB directory    
     def dbPath(self):
+        
+        os.chdir(dir_path)
+
         self.db_path = dname /'db'
         self.db_path = Path(self.db_path)
         if not os.path.exists(self.db_path):  
@@ -124,6 +135,7 @@ class Model(QtWidgets.QMainWindow):
     #*Create a DB table for the completed series    
     def createTable(self, connection, collection_list):
         
+        os.chdir(db_path)
         self.connection = connection
         self.collection_list = collection_list
         
@@ -136,7 +148,7 @@ class Model(QtWidgets.QMainWindow):
                                     ); ''')
             print('table created')
             self.connection.commit()
-            
+            self.displayCollection(self.cursor, self.collection_list)
             self.displayCollection(self.cursor, self.collection_list)
             
         except TypeError as error:
@@ -148,8 +160,7 @@ class Model(QtWidgets.QMainWindow):
     #* Adds series to the SQLite Database
     def addSeries(self, search_bar, collection_list):
         
-        self.dbPath()
-        
+    
         self.id = 1
         self.row_id_count = []
         self.row_title_count = []
@@ -160,7 +171,6 @@ class Model(QtWidgets.QMainWindow):
             #Form a connection to the DB
             self.connection = sqlite3.connect('weebguidance.db')
             self.cursor = self.connection.cursor()
-
             #If there's a response from the connection then proceed
             if self.cursor is not None:
                 #Try to enter the default index + value. If the index or title already exists then this should catch it
@@ -197,7 +207,8 @@ class Model(QtWidgets.QMainWindow):
             
      #*Remove the series selected from the QList and the database       
     def removeSeries(self, search_field, collection_list):
-        
+        os.chdir(db_path)
+
         self.search_field = search_field
         self.search_value = search_field.text()
         self.collection_list = collection_list
@@ -227,7 +238,7 @@ class Model(QtWidgets.QMainWindow):
                   
     #* Update the collection menu search field based on the user's selection on the Qlist
     def updateField(self, search_field, collection_list):
-        self.dbPath()
+        
             
         self.search_field = search_field
         self.collection_list = collection_list
@@ -242,20 +253,21 @@ class Model(QtWidgets.QMainWindow):
 
     #* Displays the results of the completed table on the list widget           
     def displayCollection(self, cursor, collection_list ):
+
+        os.chdir(db_path)
         self.collection_list = collection_list
         self.cursor = cursor
         
         self.collection_list.clear()
                 
-        try:
+
         
-            for self.row in self.cursor.execute("SELECT * FROM completed"):
-                self.collection_list.insertItem(self.row[0], self.row[1])
-            
-            self.collection_list.sortItems()
+        for self.row in self.cursor.execute("SELECT * FROM completed"):
+            self.collection_list.insertItem(self.row[0], self.row[1])
+        
+        self.collection_list.sortItems()
     
-        except TypeError as error:
-            print(error)
+        
         
     
     #* Makes a request to the webpage and returns a request code. This will be used to test the vailidity of URLs 
@@ -461,7 +473,7 @@ class Model(QtWidgets.QMainWindow):
     
     def home_path(self):
 
-        os.chdir(dname)
+        os.chdir(dir_path)
 
     #* Retrieves values for the main menu's predictive text search bar
     def apiToSearchBar(self, search_field, start_time):
@@ -1101,7 +1113,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self):
 
-        os.chdir(dname)
+        os.chdir(dir_path)
     
         super(MainWindow, self).__init__() # Call the inherited classes __init__ method
         uic.loadUi(forms_path / 'mainWindow.ui', self) #Load the mainwindow .ui file
@@ -1162,6 +1174,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.f1 = executor.map(self.model.downloadImage, self.results_cap) # Download the images for the GUI
 
         self.show() #Show the GUI
+        os.chdir(dir_path)
 
     #* Handles what to do if the user presses the enter button. There's a better method of doing this 
     #https://forum.qt.io/topic/103613/how-to-call-keypressevent-in-pyqt5-by-returnpressed/2
@@ -1319,6 +1332,8 @@ class TopWindow(QtWidgets.QMainWindow):
         #         self.top_button.clicked.connect(lambda : self.changeImage(self.count, self.label))   
         #     except:
         #             print('fail')
+
+        #I was hoping to loop over the top buttons here to create them but failed to do so. I'm sure there's a cleaner way to do this, but I got lazy
 
         self.titles, self.ranks, self.start_dates, self.url = self.model.apiToTopWindow()
 
@@ -1559,12 +1574,15 @@ class CollectionWindow(QtWidgets.QMainWindow):
         #Load the connection ui file
         uic.loadUi(forms_path / 'collection.ui', self)
         
+        
+
         self.search_field = self.findChild(QtWidgets.QLineEdit, 'search_field')
 
         self.connection = self.model.dbConnect()
         
         self.collection_list = self.findChild(QtWidgets.QListWidget, 'collection_list')
         
+        self.model.dbPath()
         self.model.createTable(self.connection, self.collection_list)
         
         self.collection_list.itemClicked.connect(lambda: self.model.updateField(self.search_field, self.collection_list))
