@@ -32,6 +32,20 @@ pip3 install weeb-guidance
 ### Windows
 
 Download the release and run the installer
+
+or
+
+You can also install/run via Pypi if you have python installed and included on your path:
+
+```bash
+pip install weeb-guidance
+```
+or
+
+```bash
+pip3 install weeb-guidance
+```
+
 ## Requirements
 
 Weeb Guidance is available for download on any of the operating systems mentioned:
