@@ -76,7 +76,8 @@ python3 -m weeb-guidance
 ### Windows
 
 Navigate to shortcut or installation path -> Right-click executable file -> Run as administrator
-You must run as administrator!!! Otherwise, Weeb-Guidance won't have access to the temp file location. No bueno.
+
+You should run as administrator!!! Otherwise, Weeb-Guidance won't have full access to the temp file location that it creates which can result in some strange crashes. No bueno.
 
 
 ![MainMenu](https://user-images.githubusercontent.com/33399376/99194364-c9c9c580-2776-11eb-8e43-41b007a65bc5.png)
