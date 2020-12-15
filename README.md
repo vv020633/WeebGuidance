@@ -79,6 +79,12 @@ Navigate to shortcut or installation path -> Right-click executable file -> Run 
 
 You should run as administrator!!! Otherwise, Weeb-Guidance won't have full access to the temp file location that it creates which can result in some strange crashes. No bueno.
 
+After running Weeb Guidance you'll likely notice this Window:
+
+![DevToolsListening](https://user-images.githubusercontent.com/33399376/102270518-ff003980-3f15-11eb-8450-d73ac7312684.PNG)
+
+Not to worry as this is the chromedriver loading up. Don't close it, but keep it minimized if you must. Ideally this wouldn't need to be opened, but its a bit of a pain to try to remove it, and an even bigger pain trying to rebuild this using a different method
+
 
 ![MainMenu](https://user-images.githubusercontent.com/33399376/99194364-c9c9c580-2776-11eb-8e43-41b007a65bc5.png)
 ![Collection](https://user-images.githubusercontent.com/33399376/99194396-04336280-2777-11eb-9372-4da49da4b87b.png)
