@@ -51,7 +51,7 @@ pip3 install weeb-guidance
 Weeb Guidance is available for download on any of the operating systems mentioned:
 ( Windows 7/ Windows 8 / Windows 10/ Linux )
 
-Google Chrome must be installed in order to run this because it utilizes chrome driver to pull information from web pages The installer should handle the installation of any other dependencies that have been outlined, but I've made a note of them below. 
+Google Chrome must be installed in order to run this because it utilizes chrome driver to pull information from web pages. The installer should handle the installation of any other dependencies that have been outlined, but I've made a note of them below. 
 
 -bs4
 ```bash
